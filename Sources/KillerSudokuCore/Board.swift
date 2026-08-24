@@ -36,4 +36,18 @@ public struct Board: Sendable {
         }
         cells[coordinate.row][coordinate.column] = cell
     }
+
+    /// Digits currently placed in exactly 9 cells on the board. A naive count-based proxy for
+    /// "Digit completion state" (CONTEXT.md) — it doesn't yet account for rule violations, since
+    /// mistake detection doesn't exist yet (issue #5). Revisit once that lands.
+    public func completedDigits() -> Set<Int> {
+        var counts: [Int: Int] = [:]
+        for row in cells {
+            for cell in row {
+                guard let digit = cell.digit else { continue }
+                counts[digit, default: 0] += 1
+            }
+        }
+        return Set(counts.filter { $0.value == 9 }.keys)
+    }
 }

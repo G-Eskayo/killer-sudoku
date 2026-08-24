@@ -54,4 +54,23 @@ import Testing
         #expect(board.cage(at: Coordinate(row: 1, column: 1))?.id == 1)
         #expect(board.cage(at: Coordinate(row: 8, column: 8)) == nil)
     }
+
+    @Test func completedDigitsIsEmptyOnAnEmptyBoard() {
+        let board = Board(cages: Self.makeTestCages())
+        #expect(board.completedDigits().isEmpty)
+    }
+
+    @Test func completedDigitsIncludesADigitPlacedInAllNineCells() {
+        var board = Board(cages: Self.makeTestCages())
+        for row in 0..<9 {
+            board.setDigit(3, at: Coordinate(row: row, column: 0))
+        }
+        #expect(board.completedDigits() == [3])
+    }
+
+    @Test func completedDigitsExcludesADigitPlacedFewerThanNineTimes() {
+        var board = Board(cages: Self.makeTestCages())
+        board.setDigit(5, at: Coordinate(row: 0, column: 0))
+        #expect(board.completedDigits().isEmpty)
+    }
 }

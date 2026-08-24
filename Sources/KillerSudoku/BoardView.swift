@@ -24,6 +24,7 @@ struct BoardView: View {
         drawCageBorders(in: &context)
         drawCageSums(in: &context)
         drawDigits(in: &context)
+        drawPencilMarks(in: &context)
     }
 
     private func drawSelection(in context: inout GraphicsContext) {
@@ -109,6 +110,32 @@ struct BoardView: View {
                     at: CGPoint(x: rect.midX, y: rect.midY),
                     anchor: .center
                 )
+            }
+        }
+    }
+
+    private func drawPencilMarks(in context: inout GraphicsContext) {
+        for row in 0..<9 {
+            for column in 0..<9 {
+                let cell = board.cell(at: Coordinate(row: row, column: column))
+                guard cell.digit == nil, !cell.pencilMarks.isEmpty else { continue }
+                let rect = cellRect(row: row, column: column)
+                let subCell = cellSize / 3
+
+                for mark in cell.pencilMarks {
+                    let slot = mark - 1
+                    let subRow = slot / 3
+                    let subColumn = slot % 3
+                    let point = CGPoint(
+                        x: rect.minX + subCell * (CGFloat(subColumn) + 0.5),
+                        y: rect.minY + subCell * (CGFloat(subRow) + 0.5)
+                    )
+                    context.draw(
+                        Text("\(mark)").font(.system(size: subCell * 0.65)).foregroundColor(.secondary),
+                        at: point,
+                        anchor: .center
+                    )
+                }
             }
         }
     }

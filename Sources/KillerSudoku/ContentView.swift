@@ -27,7 +27,9 @@ struct ContentView: View {
                 .focused($isFocused)
                 .onKeyPress(action: handle(keyPress:))
 
-            Text("Click a cell, then type 1-9. Delete clears. Arrow keys move.")
+            CompletionLegendView(completedDigits: board.completedDigits())
+
+            Text("Click a cell, then type 1-9. Shift+1-9 toggles a pencil mark instead. Delete clears. Arrow keys move.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -38,17 +40,23 @@ struct ContentView: View {
     private func handle(keyPress: KeyPress) -> KeyPress.Result {
         guard let selected else { return .ignored }
 
-        if let character = keyPress.characters.first,
-           let digit = character.wholeNumberValue,
-           (1...9).contains(digit) {
-            board.setDigit(digit, at: selected)
+        if isDelete(keyPress) {
+            board.setDigit(nil, at: selected)
+            return .handled
+        }
+
+        // Use `key.character` (the unshifted base key) rather than `characters`, which reflects
+        // shift-processed output (e.g. Shift+1 produces "!", not "1") and would break note entry.
+        if let digit = keyPress.key.character.wholeNumberValue, (1...9).contains(digit) {
+            if keyPress.modifiers.contains(.shift) {
+                board.togglePencilMark(digit, at: selected)
+            } else {
+                board.setDigit(digit, at: selected)
+            }
             return .handled
         }
 
         switch keyPress.key {
-        case .delete, .deleteForward:
-            board.setDigit(nil, at: selected)
-            return .handled
         case .upArrow:
             move(rowDelta: -1, columnDelta: 0)
             return .handled
@@ -64,6 +72,19 @@ struct ContentView: View {
         default:
             return .ignored
         }
+    }
+
+    /// `KeyEquivalent.delete`/`.deleteForward` don't reliably match the Mac Backspace key's
+    /// actual runtime character (historically ambiguous between BS 0x08 and DEL 0x7F) - checking
+    /// the raw character scalar directly is the fallback that actually works.
+    private func isDelete(_ keyPress: KeyPress) -> Bool {
+        if keyPress.key == .delete || keyPress.key == .deleteForward {
+            return true
+        }
+        if let scalar = keyPress.characters.unicodeScalars.first {
+            return scalar.value == 0x7F || scalar.value == 0x08
+        }
+        return false
     }
 
     private func move(rowDelta: Int, columnDelta: Int) {
