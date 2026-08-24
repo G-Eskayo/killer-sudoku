@@ -1,0 +1,61 @@
+# Killer Sudoku — Context Glossary
+
+**App name**: Killer Sudoku (working title, also the app's actual name).
+
+Domain terms only. No implementation details — see `docs/adr/` for decisions and rationale.
+
+## Puzzle structure
+
+- **Cell**: one of the 81 squares in the 9x9 grid. Holds either a **digit** (1-9) or is empty.
+- **Cage**: a group of orthogonally-connected cells, outlined on the board, that must together
+  sum to its **cage sum** and contain no repeated digit among its own cells. Cages are the
+  defining mechanic of Killer Sudoku, layered on top of standard Sudoku's row/column/3x3-box
+  uniqueness rules.
+- **Cage sum**: the target total shown in the top-left corner of a cage, which the digits placed
+  in that cage's cells must add up to exactly once the cage is fully filled.
+- **Given**: a digit pre-filled by the puzzle before the player starts, exactly as in standard
+  Sudoku. Classic Killer Sudoku has none; hybrid mode does.
+
+## Modes
+
+- **Classic mode**: no givens at all — the grid starts empty and is 100% covered by cages. The
+  purist, canonical form of Killer Sudoku. Used for standard/hard difficulties.
+- **Hybrid mode**: a handful of givens are pre-filled (like standard Sudoku) alongside cages
+  covering the rest of the grid, making the puzzle more approachable. Used for the
+  Beginner difficulty tier only — not considered canonical Killer Sudoku by purists, so it's
+  scoped to onboarding new players rather than being the default experience.
+
+## Difficulty
+
+- **Difficulty tier**: one of Beginner, Easy, Medium, Hard, Expert/Extreme (exact top-tier
+  naming/count still open). Beginner is hybrid mode; every tier above it is classic mode.
+- **Solving-technique grading**: how the generator assigns a puzzle to a difficulty tier — by
+  determining which solving techniques are *required* to crack it without guessing (basic
+  cage-sum arithmetic and single candidates for low tiers, advanced cage-combination deduction
+  for high tiers), not by a structural heuristic like cage count or size. See [[0003]].
+
+## Play-state indicators
+
+- **Digit completion state**: once all 9 instances of a digit are correctly placed on the
+  board, that digit is "complete." Completion is reflected in the completion legend (below)
+  but never auto-removes that digit from pencil marks anywhere on the board — the player keeps
+  full manual control of their own notes regardless of a digit's completion state. (Deliberately
+  fixes a specific annoyance from another app, where completing a digit force-cleared it from
+  notes the player hadn't gotten to yet.)
+- **Completion legend**: a small, non-interactive 1-9 readout (not a number pad — entry stays
+  keyboard-first) that dims a digit once it reaches its completion state. Purely a status
+  readout, not an input method.
+- **Same-digit highlight**: selecting a cell that contains a digit highlights every other cell
+  on the board that currently contains that same digit. Only ever reflects digits the player
+  has actually placed — it must never expose information about unfilled cells (e.g. must not
+  hint at where a digit *should* go, only echo where it visibly already *is*).
+
+## Visual language
+
+- Color is reserved exclusively for cage tints. Every other state (mistake, same-digit
+  highlight, selection, completion) is conveyed with non-color cues — outlines, glow,
+  brightness — specifically so it stays legible against any cage tint and is colorblind-safe
+  by construction rather than by palette tuning.
+- The app follows the system light/dark setting (no in-app theme toggle). The cage tint
+  palette is deliberately tuned as two separate palettes, one per appearance — not derived by
+  automatically scaling one palette — so cage distinctness and colorblind-safety hold in both.
