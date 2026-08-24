@@ -9,8 +9,6 @@ struct BoardView: View {
     let selected: Coordinate?
     let cellSize: CGFloat
 
-    @Environment(\.colorScheme) private var colorScheme
-
     private var boardSize: CGFloat { cellSize * 9 }
 
     var body: some View {
@@ -21,22 +19,11 @@ struct BoardView: View {
     }
 
     private func draw(in context: inout GraphicsContext, size: CGSize) {
-        drawCageTints(in: &context)
         drawSelection(in: &context)
         drawGridLines(in: &context)
         drawCageBorders(in: &context)
         drawCageSums(in: &context)
         drawDigits(in: &context)
-    }
-
-    private func drawCageTints(in context: inout GraphicsContext) {
-        for row in 0..<9 {
-            for column in 0..<9 {
-                guard let cage = board.cage(at: Coordinate(row: row, column: column)) else { continue }
-                let tint = BoardTheme.cageTint(for: cage.id, colorScheme: colorScheme)
-                context.fill(Path(cellRect(row: row, column: column)), with: .color(tint))
-            }
-        }
     }
 
     private func drawSelection(in context: inout GraphicsContext) {

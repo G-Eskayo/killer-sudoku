@@ -52,10 +52,12 @@ Domain terms only. No implementation details — see `docs/adr/` for decisions a
 
 ## Visual language
 
-- Color is reserved exclusively for cage tints. Every other state (mistake, same-digit
+- Cages are dashed borders + a sum label only — no background color tint. (Originally tints
+  were planned, but seeing them on the actual bootstrap build — where the placeholder demo
+  puzzle's cages happen to all be single-row strips — showed a flat "rainbow stripes" problem;
+  dropped rather than risk the same busy read on real irregular cage shapes later.)
+- Since color carries no cage-identity meaning, every play-state cue (mistake, same-digit
   highlight, selection, completion) is conveyed with non-color cues — outlines, glow,
-  brightness — specifically so it stays legible against any cage tint and is colorblind-safe
-  by construction rather than by palette tuning.
-- The app follows the system light/dark setting (no in-app theme toggle). The cage tint
-  palette is deliberately tuned as two separate palettes, one per appearance — not derived by
-  automatically scaling one palette — so cage distinctness and colorblind-safety hold in both.
+  brightness — which was already the plan for those states and remains colorblind-safe by
+  construction.
+- The app follows the system light/dark setting (no in-app theme toggle).
