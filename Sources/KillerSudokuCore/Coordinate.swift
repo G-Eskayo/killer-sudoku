@@ -1,4 +1,4 @@
-public struct Coordinate: Hashable, Sendable {
+public struct Coordinate: Hashable, Sendable, Codable {
     public let row: Int
     public let column: Int
 

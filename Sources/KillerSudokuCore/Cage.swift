@@ -1,4 +1,4 @@
-public struct Cage: Identifiable, Sendable {
+public struct Cage: Identifiable, Sendable, Codable {
     public let id: Int
     public let cells: [Coordinate]
     public let sum: Int

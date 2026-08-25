@@ -1,4 +1,4 @@
-public struct Cell: Sendable {
+public struct Cell: Sendable, Codable {
     public var digit: Int?
     public var pencilMarks: Set<Int> = []
 

@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 @testable import KillerSudokuCore
 
 @Suite struct BoardTests {
@@ -268,5 +269,19 @@ import Testing
 
         #expect(board.cell(at: target).digit == nil)
         #expect(!board.canUndo)
+    }
+
+    @Test func encodingAndDecodingRoundTripsCagesAndCellContents() throws {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 0, column: 0)
+        board.setDigit(6, at: target)
+        board.togglePencilMark(3, at: Coordinate(row: 1, column: 0))
+
+        let data = try JSONEncoder().encode(board)
+        let restored = try JSONDecoder().decode(Board.self, from: data)
+
+        #expect(restored.cages.map(\.id) == board.cages.map(\.id))
+        #expect(restored.cell(at: target).digit == 6)
+        #expect(restored.cell(at: Coordinate(row: 1, column: 0)).pencilMarks == [3])
     }
 }

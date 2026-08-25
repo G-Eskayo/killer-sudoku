@@ -14,7 +14,15 @@ public struct Board: Sendable {
     private var redoStack: [Edit] = []
 
     public init(cages: [Cage]) {
-        self.cells = Array(repeating: Array(repeating: Cell(), count: 9), count: 9)
+        self.init(cages: cages, cells: Array(repeating: Array(repeating: Cell(), count: 9), count: 9))
+    }
+
+    /// Restores a board's cage layout and cell contents directly (e.g. from a saved snapshot)
+    /// without replaying any edits — undo/redo history is deliberately not part of what's saved
+    /// (see [[PuzzleStore]]), so a restored board always starts with a clean history, same as a
+    /// freshly generated one.
+    public init(cages: [Cage], cells: [[Cell]]) {
+        self.cells = cells
         self.cages = cages
         var index: [Coordinate: Int] = [:]
         for (cageIndex, cage) in cages.enumerated() {
@@ -187,5 +195,26 @@ public struct Board: Sendable {
             }
         }
         return coordinates
+    }
+}
+
+extension Board: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case cages, cells
+    }
+
+    /// Only cage layout and cell contents round-trip — undo/redo history is intentionally not
+    /// part of the saved shape (see the `init(cages:cells:)` doc comment).
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let cages = try container.decode([Cage].self, forKey: .cages)
+        let cells = try container.decode([[Cell]].self, forKey: .cells)
+        self.init(cages: cages, cells: cells)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(cages, forKey: .cages)
+        try container.encode(cells, forKey: .cells)
     }
 }
