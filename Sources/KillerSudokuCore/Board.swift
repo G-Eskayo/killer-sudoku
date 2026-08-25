@@ -1,7 +1,17 @@
 public struct Board: Sendable {
+    /// One undoable player edit. Pencil-mark toggles are their own inverse, so undoing/redoing
+    /// one just re-toggles it; digit edits need the prior value recorded since `nil` (cleared)
+    /// is itself a valid "next" state.
+    private enum Edit: Sendable {
+        case digit(coordinate: Coordinate, previous: Int?, next: Int?)
+        case pencilMark(coordinate: Coordinate, mark: Int)
+    }
+
     private var cells: [[Cell]]
     public let cages: [Cage]
     private let cageIndexByCoordinate: [Coordinate: Int]
+    private var undoStack: [Edit] = []
+    private var redoStack: [Edit] = []
 
     public init(cages: [Cage]) {
         self.cells = Array(repeating: Array(repeating: Cell(), count: 9), count: 9)
@@ -24,10 +34,52 @@ public struct Board: Sendable {
     }
 
     public mutating func setDigit(_ digit: Int?, at coordinate: Coordinate) {
+        let previous = cells[coordinate.row][coordinate.column].digit
+        guard previous != digit else { return }
         cells[coordinate.row][coordinate.column].digit = digit
+        record(.digit(coordinate: coordinate, previous: previous, next: digit))
     }
 
     public mutating func togglePencilMark(_ mark: Int, at coordinate: Coordinate) {
+        applyPencilMarkToggle(mark, at: coordinate)
+        record(.pencilMark(coordinate: coordinate, mark: mark))
+    }
+
+    /// Undoes the most recent edit (digit set/clear or pencil-mark toggle), walking back through
+    /// the full session history one step at a time. A no-op with nothing left to undo.
+    public mutating func undo() {
+        guard let edit = undoStack.popLast() else { return }
+        switch edit {
+        case .digit(let coordinate, let previous, _):
+            cells[coordinate.row][coordinate.column].digit = previous
+        case .pencilMark(let coordinate, let mark):
+            applyPencilMarkToggle(mark, at: coordinate)
+        }
+        redoStack.append(edit)
+    }
+
+    /// Redoes the most recently undone edit. A new edit made after an undo truncates this stack
+    /// (standard undo/redo semantics) since `record` clears it.
+    public mutating func redo() {
+        guard let edit = redoStack.popLast() else { return }
+        switch edit {
+        case .digit(let coordinate, _, let next):
+            cells[coordinate.row][coordinate.column].digit = next
+        case .pencilMark(let coordinate, let mark):
+            applyPencilMarkToggle(mark, at: coordinate)
+        }
+        undoStack.append(edit)
+    }
+
+    public var canUndo: Bool { !undoStack.isEmpty }
+    public var canRedo: Bool { !redoStack.isEmpty }
+
+    private mutating func record(_ edit: Edit) {
+        undoStack.append(edit)
+        redoStack.removeAll()
+    }
+
+    private mutating func applyPencilMarkToggle(_ mark: Int, at coordinate: Coordinate) {
         var cell = cells[coordinate.row][coordinate.column]
         if cell.pencilMarks.contains(mark) {
             cell.pencilMarks.remove(mark)

@@ -189,4 +189,84 @@ import Testing
 
         #expect(board.sameDigitCoordinates(as: selected) == [match])
     }
+
+    @Test func undoingASetDigitRestoresThePreviousValue() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 4)
+        board.setDigit(7, at: target)
+
+        board.undo()
+
+        #expect(board.cell(at: target).digit == nil)
+    }
+
+    @Test func redoingReappliesTheUndoneDigit() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 4)
+        board.setDigit(7, at: target)
+        board.undo()
+
+        board.redo()
+
+        #expect(board.cell(at: target).digit == 7)
+    }
+
+    @Test func undoWalksBackThroughMultipleEditsNotJustTheLastOne() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 4)
+        board.setDigit(1, at: target)
+        board.setDigit(2, at: target)
+        board.setDigit(3, at: target)
+
+        board.undo()
+        #expect(board.cell(at: target).digit == 2)
+        board.undo()
+        #expect(board.cell(at: target).digit == 1)
+        board.undo()
+        #expect(board.cell(at: target).digit == nil)
+    }
+
+    @Test func newEditAfterUndoTruncatesTheRedoStack() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 4)
+        board.setDigit(1, at: target)
+        board.undo()
+        #expect(board.canRedo)
+
+        board.setDigit(9, at: target)
+
+        #expect(!board.canRedo)
+        board.redo()
+        #expect(board.cell(at: target).digit == 9)
+    }
+
+    @Test func undoingAPencilMarkToggleReTogglesIt() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 0, column: 0)
+        board.togglePencilMark(4, at: target)
+        #expect(board.cell(at: target).pencilMarks == [4])
+
+        board.undo()
+
+        #expect(board.cell(at: target).pencilMarks.isEmpty)
+    }
+
+    @Test func undoWithNothingToUndoIsANoOp() {
+        var board = Board(cages: Self.makeTestCages())
+        #expect(!board.canUndo)
+        board.undo()
+        #expect(board.mistakenCoordinates().isEmpty)
+    }
+
+    @Test func settingTheSameDigitAgainDoesNotAddAnUndoStep() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 4)
+        board.setDigit(5, at: target)
+        board.setDigit(5, at: target)
+
+        board.undo()
+
+        #expect(board.cell(at: target).digit == nil)
+        #expect(!board.canUndo)
+    }
 }

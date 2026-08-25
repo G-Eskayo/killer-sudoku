@@ -2,7 +2,7 @@ import SwiftUI
 import KillerSudokuCore
 
 struct ContentView: View {
-    @State private var board = PuzzleGenerator.generate()
+    @EnvironmentObject private var game: GameState
     @State private var selected: Coordinate? = Coordinate(row: 0, column: 0)
     @FocusState private var isFocused: Bool
 
@@ -13,7 +13,7 @@ struct ContentView: View {
             Text("Killer Sudoku")
                 .font(.title2.weight(.semibold))
 
-            BoardView(board: board, selected: selected, cellSize: cellSize)
+            BoardView(board: game.board, selected: selected, cellSize: cellSize)
                 .gesture(
                     SpatialTapGesture()
                         .onEnded { value in
@@ -27,7 +27,7 @@ struct ContentView: View {
                 .focused($isFocused)
                 .onKeyPress(action: handle(keyPress:))
 
-            CompletionLegendView(completedDigits: board.completedDigits())
+            CompletionLegendView(completedDigits: game.board.completedDigits())
 
             Text("Click a cell, then type 1-9. Shift+1-9 toggles a pencil mark instead. Delete clears. Arrow keys move.")
                 .font(.caption)
@@ -41,7 +41,7 @@ struct ContentView: View {
         guard let selected else { return .ignored }
 
         if isDelete(keyPress) {
-            board.setDigit(nil, at: selected)
+            game.board.setDigit(nil, at: selected)
             return .handled
         }
 
@@ -49,9 +49,9 @@ struct ContentView: View {
         // shift-processed output (e.g. Shift+1 produces "!", not "1") and would break note entry.
         if let digit = keyPress.key.character.wholeNumberValue, (1...9).contains(digit) {
             if keyPress.modifiers.contains(.shift) {
-                board.togglePencilMark(digit, at: selected)
+                game.board.togglePencilMark(digit, at: selected)
             } else {
-                board.setDigit(digit, at: selected)
+                game.board.setDigit(digit, at: selected)
             }
             return .handled
         }
