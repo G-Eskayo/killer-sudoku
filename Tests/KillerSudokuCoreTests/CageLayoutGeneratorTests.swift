@@ -37,6 +37,26 @@ import Testing
         }
     }
 
+    @Test func givensCountProducesThatManySingleCellCages() {
+        let cages = CageLayoutGenerator.generate(for: DemoPuzzle.solutionGrid, givensCount: 3)
+        let singleCellCages = cages.filter { $0.cells.count == 1 }
+        #expect(singleCellCages.count == 3)
+    }
+
+    @Test func givensStillCoverEveryCellExactlyOnceWithNonGivenCagesWithinBounds() {
+        let cages = CageLayoutGenerator.generate(for: DemoPuzzle.solutionGrid, givensCount: 3)
+
+        var seen: Set<Coordinate> = []
+        for cage in cages {
+            for coordinate in cage.cells {
+                #expect(!seen.contains(coordinate), "duplicate coverage at \(coordinate)")
+                seen.insert(coordinate)
+            }
+            #expect((1...4).contains(cage.cells.count))
+        }
+        #expect(seen.count == 81)
+    }
+
     private func isOrthogonallyConnected(_ cells: [Coordinate]) -> Bool {
         guard let first = cells.first else { return true }
         var reached: Set<Coordinate> = [first]

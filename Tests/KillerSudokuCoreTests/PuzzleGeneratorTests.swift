@@ -19,5 +19,13 @@ import Testing
         #expect(seen.count == 81)
 
         #expect(PuzzleSolver.countSolutions(cages: board.cages, upTo: 2) == 1)
+
+        // ADR 0006: classic mode's given baseline is pre-filled directly, not left for the
+        // player to notice a single-cell cage's sum equals its own digit.
+        let givenCages = board.cages.filter { $0.cells.count == 1 }
+        #expect((2...4).contains(givenCages.count))
+        for cage in givenCages {
+            #expect(board.cell(at: cage.cells[0]).digit == cage.sum)
+        }
     }
 }

@@ -1,18 +1,23 @@
 /// Partitions a solved 9x9 grid into randomized Killer Sudoku cages: orthogonally-connected
 /// groups of 2-4 cells, covering every cell exactly once, none containing a repeated digit
-/// (per [[CONTEXT.md]]'s cage definition). Used by [[PuzzleGenerator]].
+/// (per [[CONTEXT.md]]'s cage definition), plus an optional few size-1 "given" cages (ADR 0006).
+/// Used by [[PuzzleGenerator]].
 public enum CageLayoutGenerator {
-    public static func generate(for grid: [[Int]]) -> [Cage] {
-        cages(for: grid, in: allCoordinates(), startingID: 0)
+    /// `givensCount` single-cell cages (ADR 0006's classic-mode given baseline) are seeded
+    /// first, before the rest of the board is partitioned into normal 2-4 cell cages.
+    public static func generate(for grid: [[Int]], givensCount: Int = 0) -> [Cage] {
+        cages(for: grid, in: allCoordinates(), startingID: 0, givensCount: givensCount)
     }
 
     /// Same algorithm restricted to an explicit cell region rather than the whole board — lets a
     /// caller (e.g. a test needing a partially hand-controlled layout) generate a realistic,
     /// well-scattered cage partition over just part of the board. `startingID` avoids id
     /// collisions when the caller combines this with cages built another way.
-    static func cages(for grid: [[Int]], in region: Set<Coordinate>, startingID: Int) -> [Cage] {
+    static func cages(
+        for grid: [[Int]], in region: Set<Coordinate>, startingID: Int, givensCount: Int = 0
+    ) -> [Cage] {
         while true {
-            if let groups = attempt(for: grid, in: region) {
+            if let groups = attempt(for: grid, in: region, givensCount: givensCount) {
                 return groups.enumerated().map { index, cells in
                     let sum = cells.reduce(0) { $0 + grid[$1.row][$1.column] }
                     return Cage(id: startingID + index, cells: cells, sum: sum)
@@ -25,9 +30,19 @@ public enum CageLayoutGenerator {
     /// scratch) if a cell gets stranded alone with no unassigned neighbor and no adjacent
     /// already-built cage it can join without breaking the size or no-repeat-digit bounds —
     /// simpler and just as effective at this board size as backtracking within a single pass.
-    private static func attempt(for grid: [[Int]], in region: Set<Coordinate>) -> [[Coordinate]]? {
+    private static func attempt(
+        for grid: [[Int]], in region: Set<Coordinate>, givensCount: Int
+    ) -> [[Coordinate]]? {
         var unassigned = region
         var cages: [[Coordinate]] = []
+
+        // Seed the given-baseline single-cell cages first, before any normal growth claims
+        // their would-be neighbors.
+        for _ in 0..<givensCount {
+            guard let seed = unassigned.randomElement() else { break }
+            unassigned.remove(seed)
+            cages.append([seed])
+        }
 
         while let seed = unassigned.randomElement() {
             unassigned.remove(seed)
@@ -67,7 +82,10 @@ public enum CageLayoutGenerator {
         let neighborSet = Set(orthogonalNeighbors(of: coordinate, in: region))
         let digit = grid[coordinate.row][coordinate.column]
         return cages.firstIndex { cage in
-            cage.count < 4
+            // Size-1 entries here are always given-baseline cages (the main growth loop only
+            // ever appends cages of size 2+) — they must never absorb a stranded neighbor and
+            // grow past size 1, or they'd stop being givens.
+            cage.count >= 2 && cage.count < 4
                 && cage.contains(where: neighborSet.contains)
                 && !cage.contains(where: { grid[$0.row][$0.column] == digit })
         }
