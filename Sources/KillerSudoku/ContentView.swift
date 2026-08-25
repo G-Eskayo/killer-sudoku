@@ -2,7 +2,7 @@ import SwiftUI
 import KillerSudokuCore
 
 struct ContentView: View {
-    @State private var board = DemoPuzzle.makeBoard()
+    @State private var board = PuzzleGenerator.generate()
     @State private var selected: Coordinate? = Coordinate(row: 0, column: 0)
     @FocusState private var isFocused: Bool
 

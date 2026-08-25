@@ -1,5 +1,6 @@
-/// Bootstrap fixture data for the local dev build (issues #2/#3 in the v1 breakdown), standing
-/// in for the real puzzle generator (ADR 0003 / issue #11) which doesn't exist yet.
+/// Originally bootstrap fixture data standing in for the real puzzle generator before it
+/// existed (superseded as the app's launch puzzle by [[PuzzleGenerator]], issue #1). Kept as a
+/// known, fixed cage layout for [[PuzzleSolverTests]] rather than deleted outright.
 ///
 /// `solutionGrid` is a known-valid completed Sudoku grid, used only to derive correct cage sums
 /// below — the running `Board` never sees it. Cage groups are deliberately kept within single
