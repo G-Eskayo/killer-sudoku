@@ -14,6 +14,9 @@ struct ContentView: View {
                 Text("Killer Sudoku")
                     .font(.title2.weight(.semibold))
                 HStack {
+                    NewPuzzleMenu(isGenerating: game.isGeneratingNewPuzzle) { difficulty in
+                        game.startNewPuzzle(difficulty: difficulty)
+                    }
                     Spacer()
                     TimerView(timer: game.timer) { game.toggleTimer() }
                 }
@@ -44,7 +47,7 @@ struct ContentView: View {
     }
 
     private func handle(keyPress: KeyPress) -> KeyPress.Result {
-        guard let selected else { return .ignored }
+        guard let selected, !game.isGeneratingNewPuzzle else { return .ignored }
 
         if isDelete(keyPress) {
             game.board.setDigit(nil, at: selected)

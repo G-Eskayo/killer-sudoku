@@ -3,15 +3,30 @@
 /// search once a second solution proves the puzzle isn't unique. Used by [[PuzzleGenerator]] to
 /// verify a generated layout before presenting it to the player.
 public enum PuzzleSolver {
+    /// `nodesVisited` is exposed for callers that want it as a difficulty signal (search effort
+    /// needed to fully verify uniqueness correlates with how hard a puzzle is to crack, even
+    /// though it isn't naming which human technique would be needed) — see `DifficultyGrader`.
+    public struct VerificationResult: Sendable {
+        public let solutionCount: Int?
+        public let nodesVisited: Int
+    }
+
     /// Counts solutions up to `cap`, but gives up and returns nil if the search visits more than
     /// `nodeBudget` tree nodes without resolving — some random cage layouts are genuinely
     /// expensive to prove either way, and it's cheaper for a caller like [[PuzzleGenerator]] to
     /// discard a hard instance and try a fresh one than to fight one search to the end. Node
     /// count (not wall-clock time) makes the cutoff deterministic and machine-independent.
-    public static func countSolutions(cages: [Cage], upTo cap: Int, nodeBudget: Int = 20_000) -> Int? {
+    public static func verify(cages: [Cage], upTo cap: Int, nodeBudget: Int = 20_000) -> VerificationResult {
         let state = SolverState(cages: cages, nodeBudget: nodeBudget)
         state.search(upTo: cap)
-        return state.exceededBudget ? nil : state.solutionCount
+        return VerificationResult(
+            solutionCount: state.exceededBudget ? nil : state.solutionCount,
+            nodesVisited: state.nodesVisited
+        )
+    }
+
+    public static func countSolutions(cages: [Cage], upTo cap: Int, nodeBudget: Int = 20_000) -> Int? {
+        verify(cages: cages, upTo: cap, nodeBudget: nodeBudget).solutionCount
     }
 }
 
@@ -31,7 +46,7 @@ private final class SolverState {
     private var cageFilledCount: [Int]
     private var cap = 0
     private let nodeBudget: Int
-    private var nodesVisited = 0
+    private(set) var nodesVisited = 0
     private(set) var solutionCount = 0
     private(set) var exceededBudget = false
 

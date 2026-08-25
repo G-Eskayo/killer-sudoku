@@ -18,6 +18,10 @@ final class GameState: ObservableObject {
     /// the puzzle was restored. A future stats slice (#9) reads `elapsed()` on completion; it
     /// doesn't own storage here.
     @Published var timer = PuzzleTimer()
+    /// True while a New Puzzle request (issue #2) is generating in the background — generation
+    /// can take anywhere from well under a second to tens of seconds (ADR 0007), so the UI needs
+    /// a loading state rather than freezing on the main thread for an explicit user action.
+    @Published private(set) var isGeneratingNewPuzzle = false
     private let modelContext: ModelContext
     private var saveSubscription: AnyCancellable?
 
@@ -38,6 +42,25 @@ final class GameState: ObservableObject {
             timer.pause()
         } else {
             timer.start()
+        }
+    }
+
+    /// Starts a fresh puzzle at the requested difficulty (issue #2), replacing whatever was in
+    /// progress — the single-active-puzzle model from v1-scope.md. Generation runs off the main
+    /// actor so the UI stays responsive; `isGeneratingNewPuzzle` lets the view show that. A new
+    /// `Board` value naturally starts with empty undo/redo history (nothing to carry over), and
+    /// the timer restarts per issue #8's "resets when a new puzzle starts".
+    func startNewPuzzle(difficulty: Difficulty) {
+        guard !isGeneratingNewPuzzle else { return }
+        isGeneratingNewPuzzle = true
+        Task {
+            let newBoard = await Task.detached(priority: .userInitiated) {
+                PuzzleGenerator.generate(difficulty: difficulty)
+            }.value
+            board = newBoard
+            timer.reset()
+            timer.start()
+            isGeneratingNewPuzzle = false
         }
     }
 }
