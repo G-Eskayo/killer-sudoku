@@ -1,9 +1,8 @@
 import SwiftUI
 import KillerSudokuCore
 
-/// Static + selection rendering only (issue #2/#3 scope). Mistake highlighting, same-digit
-/// highlight, and the completion legend are separate later slices (#5-#7) and deliberately not
-/// implemented here yet.
+/// Same-digit highlight and the completion legend are separate later slices (#5, already partly
+/// covered by CompletionLegendView) and deliberately not implemented here yet.
 struct BoardView: View {
     let board: Board
     let selected: Coordinate?
@@ -23,6 +22,7 @@ struct BoardView: View {
         drawGridLines(in: &context)
         drawCageBorders(in: &context)
         drawCageSums(in: &context)
+        drawMistakes(in: &context)
         drawDigits(in: &context)
         drawPencilMarks(in: &context)
     }
@@ -31,6 +31,21 @@ struct BoardView: View {
         guard let selected else { return }
         let rect = cellRect(row: selected.row, column: selected.column).insetBy(dx: 2, dy: 2)
         context.stroke(Path(roundedRect: rect, cornerRadius: 3), with: .color(.accentColor), lineWidth: 3)
+    }
+
+    /// Outline + glow only, deliberately no color (CONTEXT.md: color is reserved for nothing in
+    /// this app since cage tints were dropped — every play-state cue must be colorblind-safe by
+    /// construction). `.primary`-based stroke plus a soft shadow reads as "wrong" without relying
+    /// on hue.
+    private func drawMistakes(in context: inout GraphicsContext) {
+        for coordinate in board.mistakenCoordinates() {
+            let rect = cellRect(row: coordinate.row, column: coordinate.column).insetBy(dx: 2, dy: 2)
+            let path = Path(roundedRect: rect, cornerRadius: 3)
+            context.drawLayer { layer in
+                layer.addFilter(.shadow(color: .primary.opacity(0.9), radius: 4))
+                layer.stroke(path, with: .color(.primary.opacity(0.9)), lineWidth: 2.5)
+            }
+        }
     }
 
     private func drawGridLines(in context: inout GraphicsContext) {
