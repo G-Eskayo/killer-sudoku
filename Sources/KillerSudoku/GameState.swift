@@ -13,6 +13,11 @@ import KillerSudokuCore
 @MainActor
 final class GameState: ObservableObject {
     @Published var board: Board
+    /// Per issue #8: visible, pausable, resets on a new puzzle — deliberately not persisted
+    /// itself (unlike `board`), so it always starts fresh at app launch regardless of whether
+    /// the puzzle was restored. A future stats slice (#9) reads `elapsed()` on completion; it
+    /// doesn't own storage here.
+    @Published var timer = PuzzleTimer()
     private let modelContext: ModelContext
     private var saveSubscription: AnyCancellable?
 
@@ -25,5 +30,14 @@ final class GameState: ObservableObject {
             .sink { [modelContext] board in
                 PuzzleStore.save(board, context: modelContext)
             }
+        timer.start()
+    }
+
+    func toggleTimer() {
+        if timer.isRunning {
+            timer.pause()
+        } else {
+            timer.start()
+        }
     }
 }

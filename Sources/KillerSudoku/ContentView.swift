@@ -10,8 +10,14 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Killer Sudoku")
-                .font(.title2.weight(.semibold))
+            ZStack {
+                Text("Killer Sudoku")
+                    .font(.title2.weight(.semibold))
+                HStack {
+                    Spacer()
+                    TimerView(timer: game.timer) { game.toggleTimer() }
+                }
+            }
 
             BoardView(board: game.board, selected: selected, cellSize: cellSize)
                 .gesture(
