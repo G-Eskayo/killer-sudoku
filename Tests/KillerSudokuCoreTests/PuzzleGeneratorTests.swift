@@ -28,4 +28,12 @@ import Testing
             #expect(board.cell(at: cage.cells[0]).digit == cage.sum)
         }
     }
+
+    @Test func generateWithDifficultyReturnsAPuzzleGradingAtThatTier() {
+        let board = PuzzleGenerator.generate(difficulty: .easy)
+
+        let result = PuzzleSolver.verify(cages: board.cages, upTo: 2)
+        #expect(result.solutionCount == 1)
+        #expect(Difficulty.fromSearchEffort(nodesVisited: result.nodesVisited) == .easy)
+    }
 }

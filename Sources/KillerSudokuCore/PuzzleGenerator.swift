@@ -11,16 +11,34 @@ public enum PuzzleGenerator {
 
     public static func generate() -> Board {
         while true {
-            let grid = SudokuGridGenerator.generate()
-            let cages = CageLayoutGenerator.generate(for: grid, givensCount: Int.random(in: givensRange))
-            // countSolutions returns nil when verification is inconclusive within its node
-            // budget (some random layouts are genuinely expensive to prove either way) — treated
-            // the same as a confirmed non-unique layout: discard and try a fresh instance rather
-            // than fight one hard candidate to the end.
-            if PuzzleSolver.countSolutions(cages: cages, upTo: 2) == 1 {
-                return board(for: cages)
+            if let board = attempt(requiring: nil) {
+                return board
             }
         }
+    }
+
+    /// Regenerates until a candidate both verifies as uniquely solvable *and* grades at the
+    /// requested tier (ADR 0007's search-effort signal) — the "New Puzzle" flow (issue #2).
+    public static func generate(difficulty: Difficulty) -> Board {
+        while true {
+            if let board = attempt(requiring: difficulty) {
+                return board
+            }
+        }
+    }
+
+    /// One candidate puzzle. Returns nil if it's non-unique, inconclusive within the solver's
+    /// node budget, or (when `difficulty` is given) doesn't land in the requested tier — any of
+    /// which just means the caller's retry loop tries a fresh instance.
+    private static func attempt(requiring difficulty: Difficulty?) -> Board? {
+        let grid = SudokuGridGenerator.generate()
+        let cages = CageLayoutGenerator.generate(for: grid, givensCount: Int.random(in: givensRange))
+        let result = PuzzleSolver.verify(cages: cages, upTo: 2)
+        guard result.solutionCount == 1 else { return nil }
+        if let difficulty, Difficulty.fromSearchEffort(nodesVisited: result.nodesVisited) != difficulty {
+            return nil
+        }
+        return board(for: cages)
     }
 
     /// Pre-fills every size-1 (given) cage's digit directly into the initial cell grid — a
