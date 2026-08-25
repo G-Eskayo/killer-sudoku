@@ -168,4 +168,25 @@ import Testing
         board.setDigit(nil, at: b)
         #expect(board.mistakenCoordinates().isEmpty)
     }
+
+    @Test func sameDigitCoordinatesIsEmptyWhenSelectedCellIsEmpty() {
+        let board = Board(cages: Self.makeTestCages())
+        #expect(board.sameDigitCoordinates(as: Coordinate(row: 0, column: 0)).isEmpty)
+    }
+
+    @Test func sameDigitCoordinatesIsEmptyWhenDigitHasNoOtherMatches() {
+        var board = Board(cages: Self.makeTestCages())
+        board.setDigit(6, at: Coordinate(row: 0, column: 0))
+        #expect(board.sameDigitCoordinates(as: Coordinate(row: 0, column: 0)).isEmpty)
+    }
+
+    @Test func sameDigitCoordinatesFindsOtherCellsWithTheSameDigitButNotItself() {
+        var board = Board(cages: Self.makeTestCages())
+        let selected = Coordinate(row: 0, column: 0)
+        let match = Coordinate(row: 8, column: 8)
+        board.setDigit(6, at: selected)
+        board.setDigit(6, at: match)
+
+        #expect(board.sameDigitCoordinates(as: selected) == [match])
+    }
 }

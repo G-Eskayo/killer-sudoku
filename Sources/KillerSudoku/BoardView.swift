@@ -1,8 +1,6 @@
 import SwiftUI
 import KillerSudokuCore
 
-/// Same-digit highlight and the completion legend are separate later slices (#5, already partly
-/// covered by CompletionLegendView) and deliberately not implemented here yet.
 struct BoardView: View {
     let board: Board
     let selected: Coordinate?
@@ -18,6 +16,7 @@ struct BoardView: View {
     }
 
     private func draw(in context: inout GraphicsContext, size: CGSize) {
+        drawSameDigitHighlight(in: &context)
         drawSelection(in: &context)
         drawGridLines(in: &context)
         drawCageBorders(in: &context)
@@ -25,6 +24,18 @@ struct BoardView: View {
         drawMistakes(in: &context)
         drawDigits(in: &context)
         drawPencilMarks(in: &context)
+    }
+
+    /// A subtle background fill (brightness, not color) on every other cell holding the same
+    /// digit as the current selection — deliberately a different non-color treatment than
+    /// `drawMistakes`'s outline+glow, so the two cues stay visually distinct at a glance even
+    /// though neither uses hue.
+    private func drawSameDigitHighlight(in context: inout GraphicsContext) {
+        guard let selected else { return }
+        for coordinate in board.sameDigitCoordinates(as: selected) {
+            let rect = cellRect(row: coordinate.row, column: coordinate.column).insetBy(dx: 1, dy: 1)
+            context.fill(Path(rect), with: .color(.primary.opacity(0.12)))
+        }
     }
 
     private func drawSelection(in context: inout GraphicsContext) {

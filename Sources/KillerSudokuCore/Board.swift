@@ -108,6 +108,23 @@ public struct Board: Sendable {
         return !(minPossible...maxPossible).contains(cage.sum)
     }
 
+    /// Every other cell currently holding the same digit as `coordinate`. Per CONTEXT.md this
+    /// only ever reflects digits the player has actually placed — an empty cell has no digit to
+    /// match against, so it always returns empty rather than hinting at where that digit
+    /// belongs.
+    public func sameDigitCoordinates(as coordinate: Coordinate) -> Set<Coordinate> {
+        guard let digit = cell(at: coordinate).digit else { return [] }
+        var matches: Set<Coordinate> = []
+        for row in 0..<9 {
+            for column in 0..<9 {
+                let candidate = Coordinate(row: row, column: column)
+                guard candidate != coordinate, cell(at: candidate).digit == digit else { continue }
+                matches.insert(candidate)
+            }
+        }
+        return matches
+    }
+
     private func boxCoordinates(_ boxIndex: Int) -> [Coordinate] {
         let startRow = (boxIndex / 3) * 3
         let startColumn = (boxIndex % 3) * 3
