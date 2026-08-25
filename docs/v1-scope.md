@@ -16,9 +16,10 @@ trade-offs are in `docs/adr/`. This doc is the "what" — the requirements — n
 - On-device puzzle generator, not a bundled set ([[0003]]).
 - Difficulty graded by solving-technique simulation (what techniques a human would need,
   not structural heuristics).
-- Difficulty tiers: Beginner (hybrid mode — has givens), Easy, Medium, Hard, Expert (classic
-  mode — no givens, 100% cage coverage). Five tiers total; Expert is the single top tier
-  (decided 2026-08-24 — see [[0005]] — rather than splitting it into Expert *and* Extreme).
+- Difficulty tiers: Beginner (hybrid mode — many givens), Easy, Medium, Hard, Expert (classic
+  mode — a small constant baseline of 2-4 givens at every tier, rest of the grid 100% cage
+  coverage; see [[0006]]). Five tiers total; Expert is the single top tier (decided 2026-08-24 —
+  see [[0005]] — rather than splitting it into Expert *and* Extreme).
 - Single active puzzle at a time, auto-saved continuously. Starting a new puzzle replaces the
   in-progress one — no multi-puzzle library in v1.
 

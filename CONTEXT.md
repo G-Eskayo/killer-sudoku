@@ -14,16 +14,25 @@ Domain terms only. No implementation details — see `docs/adr/` for decisions a
 - **Cage sum**: the target total shown in the top-left corner of a cage, which the digits placed
   in that cage's cells must add up to exactly once the cage is fully filled.
 - **Given**: a digit pre-filled by the puzzle before the player starts, exactly as in standard
-  Sudoku. Classic Killer Sudoku has none; hybrid mode does.
+  Sudoku. In classic mode a given is always represented as a **single-cell cage** (a cage of
+  size 1 — its "sum" is just that one cell's digit, so it's unambiguous by construction); in
+  hybrid mode givens sit outside the cage system entirely, pre-filled directly like a normal
+  Sudoku clue. See [[0006]] for why classic mode has givens at all.
 
 ## Modes
 
-- **Classic mode**: no givens at all — the grid starts empty and is 100% covered by cages. The
-  purist, canonical form of Killer Sudoku. Used for standard/hard difficulties.
-- **Hybrid mode**: a handful of givens are pre-filled (like standard Sudoku) alongside cages
-  covering the rest of the grid, making the puzzle more approachable. Used for the
-  Beginner difficulty tier only — not considered canonical Killer Sudoku by purists, so it's
-  scoped to onboarding new players rather than being the default experience.
+- **Classic mode**: a small, constant baseline of givens (2-4 single-cell cages) at every
+  non-Beginner tier, with the rest of the grid 100% covered by cages sized 2-4 — not the fully
+  given-less "purist" form originally envisioned. [[0006]] documents why: real-world Killer
+  Sudoku generators (researched during issue #2) don't attempt zero-given, procedurally-graded
+  classic puzzles either — they all lean on a small constant given baseline to make the grid
+  breakable at all, independent of difficulty tier. The baseline stays constant across Easy
+  through Expert; only cage shape/size and what techniques are required change with difficulty.
+- **Hybrid mode**: substantially more givens are pre-filled (like standard Sudoku) alongside
+  cages covering the rest of the grid, making the puzzle meaningfully more approachable than
+  classic mode's small baseline. Used for the Beginner difficulty tier only — the more
+  pre-filled, more onboarding-friendly end of the same givens spectrum classic mode's baseline
+  sits at the other end of, not a separate mechanic.
 
 ## Difficulty
 
@@ -32,7 +41,9 @@ Domain terms only. No implementation details — see `docs/adr/` for decisions a
 - **Solving-technique grading**: how the generator assigns a puzzle to a difficulty tier — by
   determining which solving techniques are *required* to crack it without guessing (basic
   cage-sum arithmetic and single candidates for low tiers, advanced cage-combination deduction
-  for high tiers), not by a structural heuristic like cage count or size. See [[0003]].
+  for high tiers), not by a structural heuristic like cage count or size. See [[0003]] and
+  [[0006]] — grading runs against the board including its constant given baseline (classic mode)
+  or full given set (hybrid mode), not a literally blank grid.
 
 ## Play-state indicators
 
