@@ -16,10 +16,9 @@ trade-offs are in `docs/adr/`. This doc is the "what" — the requirements — n
 - On-device puzzle generator, not a bundled set ([[0003]]).
 - Difficulty graded by solving-technique simulation (what techniques a human would need,
   not structural heuristics).
-- Difficulty tiers: Beginner (hybrid mode — has givens), Easy, Medium, Hard, Expert/Extreme
-  (classic mode — no givens, 100% cage coverage). Exact tier count/naming above Hard (one
-  top tier vs. Expert *and* Extreme as two) is still open — resolve when building the
-  generator's grading logic, not a blocker for anything upstream of it.
+- Difficulty tiers: Beginner (hybrid mode — has givens), Easy, Medium, Hard, Expert (classic
+  mode — no givens, 100% cage coverage). Five tiers total; Expert is the single top tier
+  (decided 2026-08-24 — see [[0005]] — rather than splitting it into Expert *and* Extreme).
 - Single active puzzle at a time, auto-saved continuously. Starting a new puzzle replaces the
   in-progress one — no multi-puzzle library in v1.
 
@@ -43,11 +42,11 @@ trade-offs are in `docs/adr/`. This doc is the "what" — the requirements — n
 
 ## Visual design
 
-- Cages: dashed borders, subtle per-cage color tint, cage sum labeled in the cage's top-left
-  cell.
-- Color is reserved exclusively for cage tints — every other UI state (mistake, highlight,
-  selection, completion) uses non-color cues (outline, glow, brightness), colorblind-safe by
-  construction.
+- Cages: dashed borders + cage sum labeled in the cage's top-left cell — no per-cage color
+  tint (dropped after the bootstrap build showed a "rainbow stripes" problem on regular cage
+  shapes; see CONTEXT.md's Visual language section).
+- Since color carries no cage-identity meaning, every UI state (mistake, highlight, selection,
+  completion) uses non-color cues (outline, glow, brightness), colorblind-safe by construction.
 - Follows system light/dark appearance automatically; cage tint palette is a deliberately
   separate, hand-tuned set per appearance mode (not auto-derived from one palette).
 - Animation level: subtle micro-interactions only (mistake pulse, cage-complete fade/scale,
