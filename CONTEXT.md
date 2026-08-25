@@ -27,7 +27,8 @@ Domain terms only. No implementation details — see `docs/adr/` for decisions a
   Sudoku generators (researched during issue #2) don't attempt zero-given, procedurally-graded
   classic puzzles either — they all lean on a small constant given baseline to make the grid
   breakable at all, independent of difficulty tier. The baseline stays constant across Easy
-  through Expert; only cage shape/size and what techniques are required change with difficulty.
+  through Expert; what actually differentiates tiers is cage shape/size and, per [[0007]], how
+  much solver search effort the resulting puzzle takes to crack.
 - **Hybrid mode**: substantially more givens are pre-filled (like standard Sudoku) alongside
   cages covering the rest of the grid, making the puzzle meaningfully more approachable than
   classic mode's small baseline. Used for the Beginner difficulty tier only — the more
@@ -36,14 +37,17 @@ Domain terms only. No implementation details — see `docs/adr/` for decisions a
 
 ## Difficulty
 
-- **Difficulty tier**: one of Beginner, Easy, Medium, Hard, Expert/Extreme (exact top-tier
-  naming/count still open). Beginner is hybrid mode; every tier above it is classic mode.
-- **Solving-technique grading**: how the generator assigns a puzzle to a difficulty tier — by
-  determining which solving techniques are *required* to crack it without guessing (basic
-  cage-sum arithmetic and single candidates for low tiers, advanced cage-combination deduction
-  for high tiers), not by a structural heuristic like cage count or size. See [[0003]] and
-  [[0006]] — grading runs against the board including its constant given baseline (classic mode)
-  or full given set (hybrid mode), not a literally blank grid.
+- **Difficulty tier**: one of Beginner, Easy, Medium, Hard, Expert — five tiers total, Expert is
+  the single top tier ([[0005]]). Beginner is hybrid mode; every tier above it is classic mode.
+- **Solving-technique grading**: originally meant determining which solving techniques a puzzle
+  *requires* (basic cage-sum arithmetic and single candidates for low tiers, advanced cage-
+  combination deduction for high tiers) rather than a structural heuristic like cage count or
+  size — [[0003]]. In practice this never differentiated real classic-mode puzzles at all (every
+  one graded hardest-tier regardless of actual difficulty, even after real technique additions
+  and a given baseline — [[0006]]), so classic mode's active difficulty signal is now the
+  generator's own solver search effort during unique-solution verification instead — [[0007]].
+  The technique simulator itself is still real, tested code; it's just not what classic mode's
+  New Puzzle flow currently uses.
 
 ## Play-state indicators
 
