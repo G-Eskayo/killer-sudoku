@@ -9,4 +9,16 @@ public struct Coordinate: Hashable, Sendable, Codable {
     }
 
     public var boxIndex: Int { (row / 3) * 3 + (column / 3) }
+
+    /// Every cell on the board, once each. Shared by anything that needs to enumerate or
+    /// partition the whole 9x9 grid.
+    public static let all: [Coordinate] = {
+        var coordinates: [Coordinate] = []
+        for row in 0..<9 {
+            for column in 0..<9 {
+                coordinates.append(Coordinate(row: row, column: column))
+            }
+        }
+        return coordinates
+    }()
 }

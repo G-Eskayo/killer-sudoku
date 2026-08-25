@@ -5,18 +5,28 @@
 public enum CageLayoutGenerator {
     /// `givensCount` single-cell cages (ADR 0006's classic-mode given baseline) are seeded
     /// first, before the rest of the board is partitioned into normal 2-4 cell cages.
-    public static func generate(for grid: [[Int]], givensCount: Int = 0) -> [Cage] {
-        cages(for: grid, in: allCoordinates(), startingID: 0, givensCount: givensCount)
+    ///
+    /// Returns nil if no valid partition was found within the retry budget — for the full board
+    /// this essentially never happens in practice, but a caller partitioning an irregular region
+    /// (issue #3's hybrid mode, where some cells are excluded as givens) needs to handle it: an
+    /// unlucky given selection can leave a cell fully boxed in by holes/edges with no possible
+    /// cage-mate, which is a *structural* dead end no amount of retrying the same region fixes —
+    /// only picking a fresh region (a caller-level concern) does.
+    public static func generate(for grid: [[Int]], givensCount: Int = 0) -> [Cage]? {
+        cages(for: grid, in: Set(Coordinate.all), startingID: 0, givensCount: givensCount)
     }
 
     /// Same algorithm restricted to an explicit cell region rather than the whole board — lets a
-    /// caller (e.g. a test needing a partially hand-controlled layout) generate a realistic,
-    /// well-scattered cage partition over just part of the board. `startingID` avoids id
-    /// collisions when the caller combines this with cages built another way.
+    /// caller (e.g. a test needing a partially hand-controlled layout, or hybrid mode excluding
+    /// given cells) generate a realistic, well-scattered cage partition over just part of the
+    /// board. `startingID` avoids id collisions when the caller combines this with cages built
+    /// another way. `maxAttempts` bounds the retry loop — see the doc comment above on why an
+    /// irregular region isn't guaranteed to ever succeed.
     static func cages(
-        for grid: [[Int]], in region: Set<Coordinate>, startingID: Int, givensCount: Int = 0
-    ) -> [Cage] {
-        while true {
+        for grid: [[Int]], in region: Set<Coordinate>, startingID: Int,
+        givensCount: Int = 0, maxAttempts: Int = 500
+    ) -> [Cage]? {
+        for _ in 0..<maxAttempts {
             if let groups = attempt(for: grid, in: region, givensCount: givensCount) {
                 return groups.enumerated().map { index, cells in
                     let sum = cells.reduce(0) { $0 + grid[$1.row][$1.column] }
@@ -24,6 +34,7 @@ public enum CageLayoutGenerator {
                 }
             }
         }
+        return nil
     }
 
     /// One randomized region-growing pass over `region`. Returns nil (caller retries from
@@ -99,15 +110,5 @@ public enum CageLayoutGenerator {
             let candidate = Coordinate(row: row, column: column)
             return region.contains(candidate) ? candidate : nil
         }
-    }
-
-    private static func allCoordinates() -> Set<Coordinate> {
-        var coordinates: Set<Coordinate> = []
-        for row in 0..<9 {
-            for column in 0..<9 {
-                coordinates.insert(Coordinate(row: row, column: column))
-            }
-        }
-        return coordinates
     }
 }

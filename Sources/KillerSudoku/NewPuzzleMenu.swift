@@ -27,6 +27,7 @@ struct NewPuzzleMenu: View {
 
     private func label(for difficulty: Difficulty) -> String {
         switch difficulty {
+        case .beginner: return "Beginner"
         case .easy: return "Easy"
         case .medium: return "Medium"
         case .hard: return "Hard"

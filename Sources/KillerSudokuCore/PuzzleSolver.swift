@@ -16,8 +16,15 @@ public enum PuzzleSolver {
     /// expensive to prove either way, and it's cheaper for a caller like [[PuzzleGenerator]] to
     /// discard a hard instance and try a fresh one than to fight one search to the end. Node
     /// count (not wall-clock time) makes the cutoff deterministic and machine-independent.
-    public static func verify(cages: [Cage], upTo cap: Int, nodeBudget: Int = 20_000) -> VerificationResult {
-        let state = SolverState(cages: cages, nodeBudget: nodeBudget)
+    ///
+    /// `givens` are hybrid mode's pre-filled cells that sit outside the cage system entirely
+    /// ([[CONTEXT.md]]) — they're placed before the search starts and never revisited, same as
+    /// any other already-filled cell, but contribute no cage constraint since they're not part
+    /// of one.
+    public static func verify(
+        cages: [Cage], givens: [Coordinate: Int] = [:], upTo cap: Int, nodeBudget: Int = 20_000
+    ) -> VerificationResult {
+        let state = SolverState(cages: cages, givens: givens, nodeBudget: nodeBudget)
         state.search(upTo: cap)
         return VerificationResult(
             solutionCount: state.exceededBudget ? nil : state.solutionCount,
@@ -50,7 +57,7 @@ private final class SolverState {
     private(set) var solutionCount = 0
     private(set) var exceededBudget = false
 
-    init(cages: [Cage], nodeBudget: Int) {
+    init(cages: [Cage], givens: [Coordinate: Int] = [:], nodeBudget: Int) {
         self.cages = cages
         self.nodeBudget = nodeBudget
         var index = [Int](repeating: -1, count: 81)
@@ -62,6 +69,11 @@ private final class SolverState {
         self.cageUsedMask = [Int](repeating: 0, count: cages.count)
         self.cagePartialSum = [Int](repeating: 0, count: cages.count)
         self.cageFilledCount = [Int](repeating: 0, count: cages.count)
+
+        for (coordinate, digit) in givens {
+            let position = coordinate.row * 9 + coordinate.column
+            place(digit, bit: 1 << (digit - 1), position: position, row: coordinate.row, column: coordinate.column, box: coordinate.boxIndex, cageIndex: -1)
+        }
     }
 
     func search(upTo cap: Int) {

@@ -36,4 +36,27 @@ import Testing
         #expect(result.solutionCount == 1)
         #expect(Difficulty.fromSearchEffort(nodesVisited: result.nodesVisited) == .easy)
     }
+
+    /// Hybrid mode's givens sit outside the cage system (CONTEXT.md) — unlike classic mode's
+    /// given baseline, which is always a size-1 cage. So a beginner puzzle's given cells are
+    /// exactly the ones `board.cage(at:)` returns nil for, and every other cell is covered by a
+    /// normal 2-4 cell cage.
+    @Test func generateBeginnerProducesAHybridPuzzleWithGivensOutsideTheCageSystem() {
+        let board = PuzzleGenerator.generate(difficulty: .beginner)
+
+        var givens: [Coordinate: Int] = [:]
+        var cageCoveredCount = 0
+        for coordinate in Coordinate.all {
+            if let cage = board.cage(at: coordinate) {
+                cageCoveredCount += 1
+                #expect((2...4).contains(cage.cells.count))
+            } else if let digit = board.cell(at: coordinate).digit {
+                givens[coordinate] = digit
+            }
+        }
+
+        #expect(givens.count == 20)
+        #expect(cageCoveredCount == 61)
+        #expect(PuzzleSolver.verify(cages: board.cages, givens: givens, upTo: 2).solutionCount == 1)
+    }
 }
