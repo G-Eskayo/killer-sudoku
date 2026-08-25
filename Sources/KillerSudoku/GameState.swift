@@ -22,19 +22,47 @@ final class GameState: ObservableObject {
     /// can take anywhere from well under a second to tens of seconds (ADR 0007), so the UI needs
     /// a loading state rather than freezing on the main thread for an explicit user action.
     @Published private(set) var isGeneratingNewPuzzle = false
+    /// The tier the current puzzle was requested at, or nil when it has no known tier (the
+    /// app-launch puzzle — see `PuzzleGenerator.generate()`'s doc comment). Persisted alongside
+    /// the board (issue #9) so a restored puzzle still records to the right tier on completion.
+    @Published private(set) var currentDifficulty: Difficulty?
+    /// Guards against recording the same completed puzzle twice — `$board` publishes on every
+    /// edit, so once a solve is recorded for this puzzle instance, further edits (e.g. an undo
+    /// that re-triggers completion) must not record again. Reset whenever a new puzzle starts.
+    private var hasRecordedSolve = false
     private let modelContext: ModelContext
     private var saveSubscription: AnyCancellable?
 
-    init(board: Board, modelContext: ModelContext) {
+    init(board: Board, difficulty: Difficulty?, modelContext: ModelContext) {
         self.board = board
+        self.currentDifficulty = difficulty
         self.modelContext = modelContext
+        // A restored board that's already solved (unusual, but possible) shouldn't be recorded
+        // as a fresh completion the moment the app launches.
+        self.hasRecordedSolve = board.isSolved
         // No `.dropFirst()`: a freshly generated (or freshly loaded) board is saved immediately,
         // so "restores the exact in-progress puzzle" holds even before the player's first edit.
         saveSubscription = $board
-            .sink { [modelContext] board in
-                PuzzleStore.save(board, context: modelContext)
+            .sink { [weak self] board in
+                guard let self else { return }
+                PuzzleStore.save(board, difficulty: currentDifficulty, context: modelContext)
+                recordSolveIfNeeded(board)
             }
         timer.start()
+    }
+
+    /// Records a completed solve exactly once per puzzle instance (issue #9) — only when the
+    /// current puzzle has a known difficulty tier, since an ungraded puzzle (the app-launch
+    /// case) has nowhere meaningful to record against.
+    private func recordSolveIfNeeded(_ board: Board) {
+        guard !hasRecordedSolve, board.isSolved, let currentDifficulty else { return }
+        hasRecordedSolve = true
+        StatsStore.record(difficulty: currentDifficulty, elapsedSeconds: timer.elapsed(), context: modelContext)
+    }
+
+    /// Best time and solve count for one tier (issue #9's `StatsView`).
+    func stats(for difficulty: Difficulty) -> (bestTime: Double?, solveCount: Int) {
+        (StatsStore.bestTime(for: difficulty, context: modelContext), StatsStore.solveCount(for: difficulty, context: modelContext))
     }
 
     func toggleTimer() {
@@ -57,6 +85,8 @@ final class GameState: ObservableObject {
             let newBoard = await Task.detached(priority: .userInitiated) {
                 PuzzleGenerator.generate(difficulty: difficulty)
             }.value
+            currentDifficulty = difficulty
+            hasRecordedSolve = false
             board = newBoard
             timer.reset()
             timer.start()

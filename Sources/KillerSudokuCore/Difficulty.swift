@@ -24,4 +24,16 @@ public enum Difficulty: Int, CaseIterable, Comparable, Sendable, Codable {
         default: return .expert
         }
     }
+
+    /// Shared with every UI surface that lists tiers (New Puzzle menu, stats view) so the label
+    /// text only has one place to change.
+    public var displayName: String {
+        switch self {
+        case .beginner: return "Beginner"
+        case .easy: return "Easy"
+        case .medium: return "Medium"
+        case .hard: return "Hard"
+        case .expert: return "Expert"
+        }
+    }
 }

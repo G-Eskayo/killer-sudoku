@@ -23,8 +23,9 @@ struct KillerSudokuApp: App {
         modelContainer = container
 
         let context = ModelContext(container)
-        let board = PuzzleStore.load(context: context) ?? PuzzleGenerator.generate()
-        _game = StateObject(wrappedValue: GameState(board: board, modelContext: context))
+        let restored = PuzzleStore.load(context: context)
+        let board = restored?.board ?? PuzzleGenerator.generate()
+        _game = StateObject(wrappedValue: GameState(board: board, difficulty: restored?.difficulty, modelContext: context))
     }
 
     var body: some Scene {

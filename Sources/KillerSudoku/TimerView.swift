@@ -11,7 +11,7 @@ struct TimerView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             HStack(spacing: 8) {
-                Text(formatted(timer.elapsed(now: context.date)))
+                Text(timer.elapsed(now: context.date).formattedAsMinutesAndSeconds)
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
                 Button(action: onToggle) {
@@ -21,10 +21,5 @@ struct TimerView: View {
                 .foregroundStyle(.secondary)
             }
         }
-    }
-
-    private func formatted(_ elapsed: TimeInterval) -> String {
-        let totalSeconds = max(0, Int(elapsed))
-        return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
     }
 }

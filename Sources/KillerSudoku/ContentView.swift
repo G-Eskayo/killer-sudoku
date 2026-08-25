@@ -4,6 +4,7 @@ import KillerSudokuCore
 struct ContentView: View {
     @EnvironmentObject private var game: GameState
     @State private var selected: Coordinate? = Coordinate(row: 0, column: 0)
+    @State private var showingStats = false
     @FocusState private var isFocused: Bool
 
     private let cellSize: CGFloat = 56
@@ -19,6 +20,16 @@ struct ContentView: View {
                     }
                     Spacer()
                     TimerView(timer: game.timer) { game.toggleTimer() }
+                    Button {
+                        showingStats = true
+                    } label: {
+                        Image(systemName: "chart.bar")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .popover(isPresented: $showingStats) {
+                        StatsView(game: game)
+                    }
                 }
             }
 

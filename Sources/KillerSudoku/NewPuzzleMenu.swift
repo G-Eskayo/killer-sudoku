@@ -17,21 +17,11 @@ struct NewPuzzleMenu: View {
         } else {
             Menu("New Puzzle") {
                 ForEach(Difficulty.allCases, id: \.self) { difficulty in
-                    Button(label(for: difficulty)) { onSelect(difficulty) }
+                    Button(difficulty.displayName) { onSelect(difficulty) }
                 }
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
-        }
-    }
-
-    private func label(for difficulty: Difficulty) -> String {
-        switch difficulty {
-        case .beginner: return "Beginner"
-        case .easy: return "Easy"
-        case .medium: return "Medium"
-        case .hard: return "Hard"
-        case .expert: return "Expert"
         }
     }
 }

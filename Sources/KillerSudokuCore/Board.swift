@@ -168,6 +168,17 @@ public struct Board: Sendable {
         return !(minPossible...maxPossible).contains(cage.sum)
     }
 
+    /// Every cell filled and no rule violations — the puzzle is genuinely finished, not just
+    /// full. Used to detect completion for stats recording (issue #9).
+    public var isSolved: Bool {
+        for row in cells {
+            for cell in row where cell.digit == nil {
+                return false
+            }
+        }
+        return mistakenCoordinates().isEmpty
+    }
+
     /// Every other cell currently holding the same digit as `coordinate`. Per CONTEXT.md this
     /// only ever reflects digits the player has actually placed — an empty cell has no digit to
     /// match against, so it always returns empty rather than hinting at where that digit

@@ -284,4 +284,43 @@ import Foundation
         #expect(restored.cell(at: target).digit == 6)
         #expect(restored.cell(at: Coordinate(row: 1, column: 0)).pencilMarks == [3])
     }
+
+    @Test func isNotSolvedOnAFreshBoard() {
+        let board = Board(cages: Self.makeTestCages())
+        #expect(!board.isSolved)
+    }
+
+    @Test func isSolvedWhenFullyAndCorrectlyFilled() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for row in 0..<9 {
+            for column in 0..<9 {
+                board.setDigit(DemoPuzzle.solutionGrid[row][column], at: Coordinate(row: row, column: column))
+            }
+        }
+        #expect(board.isSolved)
+    }
+
+    @Test func isNotSolvedWhenOneCellIsStillEmpty() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for row in 0..<9 {
+            for column in 0..<9 where !(row == 0 && column == 0) {
+                board.setDigit(DemoPuzzle.solutionGrid[row][column], at: Coordinate(row: row, column: column))
+            }
+        }
+        #expect(!board.isSolved)
+    }
+
+    @Test func isNotSolvedWhenFullyFilledButWithAMistake() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for row in 0..<9 {
+            for column in 0..<9 {
+                board.setDigit(DemoPuzzle.solutionGrid[row][column], at: Coordinate(row: row, column: column))
+            }
+        }
+        // Swap two digits within row 0 so the row still has all 9 cells filled but now has a
+        // duplicate (a real mistake, not just "different from the known solution").
+        board.setDigit(DemoPuzzle.solutionGrid[0][0], at: Coordinate(row: 0, column: 1))
+
+        #expect(!board.isSolved)
+    }
 }
