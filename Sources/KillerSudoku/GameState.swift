@@ -53,10 +53,14 @@ final class GameState: ObservableObject {
 
     /// Records a completed solve exactly once per puzzle instance (issue #9) — only when the
     /// current puzzle has a known difficulty tier, since an ungraded puzzle (the app-launch
-    /// case) has nowhere meaningful to record against.
+    /// case) has nowhere meaningful to record against. Pauses the timer *before* reading
+    /// `elapsed()`: a finished puzzle shouldn't keep ticking, and it keeps every later read of
+    /// `elapsed()` (the completion view, a re-opened stats popover) consistent with exactly what
+    /// got persisted here, rather than a few milliseconds further along.
     private func recordSolveIfNeeded(_ board: Board) {
         guard !hasRecordedSolve, board.isSolved, let currentDifficulty else { return }
         hasRecordedSolve = true
+        timer.pause()
         StatsStore.record(difficulty: currentDifficulty, elapsedSeconds: timer.elapsed(), context: modelContext)
     }
 

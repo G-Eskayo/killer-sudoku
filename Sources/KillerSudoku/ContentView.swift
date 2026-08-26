@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var game: GameState
     @State private var selected: Coordinate? = Coordinate(row: 0, column: 0)
     @State private var showingStats = false
+    @State private var completionSnapshot: CompletionSnapshot?
     @FocusState private var isFocused: Bool
 
     private let cellSize: CGFloat = 56
@@ -60,6 +61,23 @@ struct ContentView: View {
         }
         .padding(24)
         .onAppear { isFocused = true }
+        .onChange(of: game.board.isSolved) { _, isSolved in
+            // Fires only on a genuine false->true transition while this view is live, not for
+            // an already-solved puzzle restored at launch (SwiftUI's default `onChange` doesn't
+            // fire for the initial value) — same guarantee `GameState.hasRecordedSolve` and
+            // `BoardView`'s completion flourish already rely on.
+            guard isSolved, let difficulty = game.currentDifficulty else { return }
+            let stats = game.stats(for: difficulty)
+            completionSnapshot = CompletionSnapshot(
+                difficulty: difficulty, elapsedSeconds: game.timer.elapsed(),
+                bestTime: stats.bestTime, solveCount: stats.solveCount
+            )
+        }
+        .sheet(item: $completionSnapshot) { snapshot in
+            CompletionView(snapshot: snapshot) { tier in
+                game.startNewPuzzle(difficulty: tier)
+            }
+        }
     }
 
     private func handle(keyPress: KeyPress) -> KeyPress.Result {
