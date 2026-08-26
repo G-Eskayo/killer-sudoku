@@ -18,6 +18,11 @@ struct ContentView: View {
                     NewPuzzleMenu(isGenerating: game.isGeneratingNewPuzzle) { difficulty in
                         game.startNewPuzzle(difficulty: difficulty)
                     }
+                    if let currentDifficulty = game.currentDifficulty {
+                        Text(currentDifficulty.displayName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                     TimerView(timer: game.timer) { game.toggleTimer() }
                     Button {
