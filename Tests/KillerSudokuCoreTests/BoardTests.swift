@@ -341,6 +341,110 @@ import Foundation
         #expect(!board.isSolved)
     }
 
+    @Test func setDigitIsANoOpOnAGivenCellRegardlessOfNewValue() {
+        let target = Coordinate(row: 0, column: 0)
+        var cells = Array(repeating: Array(repeating: Cell(), count: 9), count: 9)
+        cells[target.row][target.column] = Cell(digit: 5, isGiven: true)
+        var board = Board(cages: Self.makeTestCages(), cells: cells)
+
+        board.setDigit(9, at: target)
+        #expect(board.cell(at: target).digit == 5)
+
+        board.setDigit(nil, at: target)
+        #expect(board.cell(at: target).digit == 5)
+        #expect(!board.canUndo)
+    }
+
+    /// Placing a digit removes that same digit from pencil marks in every row/column/box peer —
+    /// standard "auto-eliminate" behavior. Row 3 isn't covered by either test cage, keeping this
+    /// isolated to row/column/box rules.
+    @Test func settingADigitEliminatesMatchingPencilMarksFromRowColumnAndBoxPeers() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 3)
+        let rowPeer = Coordinate(row: 3, column: 8)
+        let columnPeer = Coordinate(row: 8, column: 3)
+        let boxPeer = Coordinate(row: 4, column: 4)
+        let unrelated = Coordinate(row: 6, column: 6)
+
+        for coordinate in [rowPeer, columnPeer, boxPeer, unrelated] {
+            board.togglePencilMark(7, at: coordinate)
+        }
+
+        board.setDigit(7, at: target)
+
+        #expect(board.cell(at: rowPeer).pencilMarks.isEmpty)
+        #expect(board.cell(at: columnPeer).pencilMarks.isEmpty)
+        #expect(board.cell(at: boxPeer).pencilMarks.isEmpty)
+        #expect(board.cell(at: unrelated).pencilMarks == [7])
+    }
+
+    @Test func settingADigitDoesNotEliminateNonMatchingPencilMarksFromPeers() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 3)
+        let peer = Coordinate(row: 3, column: 8)
+        board.togglePencilMark(2, at: peer)
+
+        board.setDigit(7, at: target)
+
+        #expect(board.cell(at: peer).pencilMarks == [2])
+    }
+
+    @Test func undoingADigitSetRestoresEliminatedPencilMarks() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 3)
+        let peer = Coordinate(row: 3, column: 8)
+        board.togglePencilMark(7, at: peer)
+        board.setDigit(7, at: target)
+
+        board.undo()
+
+        #expect(board.cell(at: target).digit == nil)
+        #expect(board.cell(at: peer).pencilMarks == [7])
+    }
+
+    @Test func redoingADigitSetReEliminatesPencilMarks() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 3, column: 3)
+        let peer = Coordinate(row: 3, column: 8)
+        board.togglePencilMark(7, at: peer)
+        board.setDigit(7, at: target)
+        board.undo()
+
+        board.redo()
+
+        #expect(board.cell(at: target).digit == 7)
+        #expect(board.cell(at: peer).pencilMarks.isEmpty)
+    }
+
+    @Test func clearPencilMarksRemovesEveryMarkInOneCell() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 0, column: 0)
+        board.togglePencilMark(2, at: target)
+        board.togglePencilMark(5, at: target)
+
+        board.clearPencilMarks(at: target)
+
+        #expect(board.cell(at: target).pencilMarks.isEmpty)
+    }
+
+    @Test func clearPencilMarksIsANoOpWhenAlreadyEmpty() {
+        var board = Board(cages: Self.makeTestCages())
+        board.clearPencilMarks(at: Coordinate(row: 0, column: 0))
+        #expect(!board.canUndo)
+    }
+
+    @Test func undoingClearPencilMarksRestoresThem() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 0, column: 0)
+        board.togglePencilMark(2, at: target)
+        board.togglePencilMark(5, at: target)
+        board.clearPencilMarks(at: target)
+
+        board.undo()
+
+        #expect(board.cell(at: target).pencilMarks == [2, 5])
+    }
+
     @Test func isNotSolvedWhenFullyFilledButWithAMistake() {
         var board = Board(cages: DemoPuzzle.makeCages())
         for row in 0..<9 {

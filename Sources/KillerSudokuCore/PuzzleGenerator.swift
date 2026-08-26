@@ -58,7 +58,7 @@ public enum PuzzleGenerator {
     private static func board(for cages: [Cage], givens: [Coordinate: Int]) -> Board {
         var cells = Array(repeating: Array(repeating: Cell(), count: 9), count: 9)
         for (coordinate, digit) in givens {
-            cells[coordinate.row][coordinate.column] = Cell(digit: digit)
+            cells[coordinate.row][coordinate.column] = Cell(digit: digit, isGiven: true)
         }
         return Board(cages: cages, cells: cells)
     }

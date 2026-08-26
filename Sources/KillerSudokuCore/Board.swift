@@ -1,10 +1,13 @@
 public struct Board: Sendable {
     /// One undoable player edit. Pencil-mark toggles are their own inverse, so undoing/redoing
     /// one just re-toggles it; digit edits need the prior value recorded since `nil` (cleared)
-    /// is itself a valid "next" state.
+    /// is itself a valid "next" state. `eliminatedPeers` on a digit edit are the row/column/box
+    /// peers that had this same digit auto-removed from their pencil marks as a side effect —
+    /// undo/redo needs to restore/reapply that removal too, in the same step as the digit itself.
     private enum Edit: Sendable {
-        case digit(coordinate: Coordinate, previous: Int?, next: Int?)
+        case digit(coordinate: Coordinate, previous: Int?, next: Int?, eliminatedPeers: Set<Coordinate>)
         case pencilMark(coordinate: Coordinate, mark: Int)
+        case clearedPencilMarks(coordinate: Coordinate, previous: Set<Int>)
     }
 
     private var cells: [[Cell]]
@@ -41,11 +44,26 @@ public struct Board: Sendable {
         cageIndexByCoordinate[coordinate].map { cages[$0] }
     }
 
+    /// A no-op on a given cell (ADR 0008's pre-filled digits aren't a player edit) or when the
+    /// new value matches what's already there. Placing a real digit (not clearing one) also
+    /// auto-eliminates that same digit from every row/column/box peer's pencil marks — standard
+    /// Sudoku assist behavior — recorded as part of this same edit so undo/redo moves both
+    /// together.
     public mutating func setDigit(_ digit: Int?, at coordinate: Coordinate) {
+        guard !cells[coordinate.row][coordinate.column].isGiven else { return }
         let previous = cells[coordinate.row][coordinate.column].digit
         guard previous != digit else { return }
         cells[coordinate.row][coordinate.column].digit = digit
-        record(.digit(coordinate: coordinate, previous: previous, next: digit))
+
+        var eliminatedPeers: Set<Coordinate> = []
+        if let digit {
+            for peer in peerCoordinates(of: coordinate) {
+                if cells[peer.row][peer.column].pencilMarks.remove(digit) != nil {
+                    eliminatedPeers.insert(peer)
+                }
+            }
+        }
+        record(.digit(coordinate: coordinate, previous: previous, next: digit, eliminatedPeers: eliminatedPeers))
     }
 
     /// A no-op when the cell already holds a digit: `BoardView` only ever renders pencil marks
@@ -57,15 +75,47 @@ public struct Board: Sendable {
         record(.pencilMark(coordinate: coordinate, mark: mark))
     }
 
-    /// Undoes the most recent edit (digit set/clear or pencil-mark toggle), walking back through
-    /// the full session history one step at a time. A no-op with nothing left to undo.
+    /// Clears every pencil mark in one cell as a single undoable step — e.g. Delete on a cell
+    /// that has notes but no digit. A no-op (no undo entry) when there's nothing to clear.
+    public mutating func clearPencilMarks(at coordinate: Coordinate) {
+        let previous = cells[coordinate.row][coordinate.column].pencilMarks
+        guard !previous.isEmpty else { return }
+        cells[coordinate.row][coordinate.column].pencilMarks = []
+        record(.clearedPencilMarks(coordinate: coordinate, previous: previous))
+    }
+
+    /// Every other cell sharing this coordinate's row, column, or 3x3 box — the standard Sudoku
+    /// "peer" set used for pencil-mark auto-elimination.
+    private func peerCoordinates(of coordinate: Coordinate) -> Set<Coordinate> {
+        var peers: Set<Coordinate> = []
+        for column in 0..<9 where column != coordinate.column {
+            peers.insert(Coordinate(row: coordinate.row, column: column))
+        }
+        for row in 0..<9 where row != coordinate.row {
+            peers.insert(Coordinate(row: row, column: coordinate.column))
+        }
+        peers.formUnion(boxCoordinates(coordinate.boxIndex))
+        peers.remove(coordinate)
+        return peers
+    }
+
+    /// Undoes the most recent edit (digit set/clear, pencil-mark toggle, or pencil-marks clear),
+    /// walking back through the full session history one step at a time. A no-op with nothing
+    /// left to undo.
     public mutating func undo() {
         guard let edit = undoStack.popLast() else { return }
         switch edit {
-        case .digit(let coordinate, let previous, _):
+        case .digit(let coordinate, let previous, let next, let eliminatedPeers):
             cells[coordinate.row][coordinate.column].digit = previous
+            if let next {
+                for peer in eliminatedPeers {
+                    cells[peer.row][peer.column].pencilMarks.insert(next)
+                }
+            }
         case .pencilMark(let coordinate, let mark):
             applyPencilMarkToggle(mark, at: coordinate)
+        case .clearedPencilMarks(let coordinate, let previous):
+            cells[coordinate.row][coordinate.column].pencilMarks = previous
         }
         redoStack.append(edit)
     }
@@ -75,10 +125,17 @@ public struct Board: Sendable {
     public mutating func redo() {
         guard let edit = redoStack.popLast() else { return }
         switch edit {
-        case .digit(let coordinate, _, let next):
+        case .digit(let coordinate, _, let next, let eliminatedPeers):
             cells[coordinate.row][coordinate.column].digit = next
+            if let next {
+                for peer in eliminatedPeers {
+                    cells[peer.row][peer.column].pencilMarks.remove(next)
+                }
+            }
         case .pencilMark(let coordinate, let mark):
             applyPencilMarkToggle(mark, at: coordinate)
+        case .clearedPencilMarks(let coordinate, _):
+            cells[coordinate.row][coordinate.column].pencilMarks = []
         }
         undoStack.append(edit)
     }

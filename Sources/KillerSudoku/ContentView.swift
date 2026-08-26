@@ -61,7 +61,11 @@ struct ContentView: View {
         guard let selected, !game.isGeneratingNewPuzzle else { return .ignored }
 
         if isDelete(keyPress) {
-            game.board.setDigit(nil, at: selected)
+            if game.board.cell(at: selected).digit != nil {
+                game.board.setDigit(nil, at: selected)
+            } else {
+                game.board.clearPencilMarks(at: selected)
+            }
             return .handled
         }
 
