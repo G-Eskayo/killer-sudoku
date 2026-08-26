@@ -11,12 +11,15 @@ struct KillerSudokuApp: App {
         // Falls back to an in-memory store if the on-disk container can't be created (e.g. a
         // corrupted store from an earlier schema) rather than crashing on launch — the player
         // just loses their saved puzzle for this run instead of being locked out entirely.
+        // ADR 0012: SolveRecord was missing from this schema entirely -- StatsStore's
+        // insert+save silently did nothing (no error, no crash, no data) for every solve ever
+        // completed, since the container never knew SolveRecord existed.
         let container: ModelContainer
         do {
-            container = try ModelContainer(for: SavedPuzzle.self)
+            container = try ModelContainer(for: SavedPuzzle.self, SolveRecord.self)
         } catch {
             container = try! ModelContainer(
-                for: SavedPuzzle.self,
+                for: SavedPuzzle.self, SolveRecord.self,
                 configurations: ModelConfiguration(isStoredInMemoryOnly: true)
             )
         }
