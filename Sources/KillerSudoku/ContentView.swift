@@ -65,10 +65,11 @@ struct ContentView: View {
             return .handled
         }
 
-        // Use `key.character` (the unshifted base key) rather than `characters`, which reflects
-        // shift-processed output (e.g. Shift+1 produces "!", not "1") and would break note entry.
-        if let digit = keyPress.key.character.wholeNumberValue, (1...9).contains(digit) {
-            if keyPress.modifiers.contains(.shift) {
+        let shiftHeld = keyPress.modifiers.contains(.shift)
+        // `key.character` is *not* the unshifted base key despite its name — on a US keyboard,
+        // Shift+3 delivers "#", not "3". `DigitKeyInput` resolves either case correctly.
+        if let digit = DigitKeyInput.resolve(character: keyPress.key.character, shiftHeld: shiftHeld) {
+            if shiftHeld {
                 game.board.togglePencilMark(digit, at: selected)
             } else {
                 game.board.setDigit(digit, at: selected)

@@ -48,7 +48,11 @@ public struct Board: Sendable {
         record(.digit(coordinate: coordinate, previous: previous, next: digit))
     }
 
+    /// A no-op when the cell already holds a digit: `BoardView` only ever renders pencil marks
+    /// on an empty cell, so recording one on a filled cell would silently do nothing visible —
+    /// and worse, add its own undo entry on top of whatever set that digit.
     public mutating func togglePencilMark(_ mark: Int, at coordinate: Coordinate) {
+        guard cells[coordinate.row][coordinate.column].digit == nil else { return }
         applyPencilMarkToggle(mark, at: coordinate)
         record(.pencilMark(coordinate: coordinate, mark: mark))
     }

@@ -48,6 +48,37 @@ import Foundation
         #expect(board.cell(at: target).pencilMarks.isEmpty)
     }
 
+    /// Regression test: a cell that already shows a digit has no visible room for a pencil mark
+    /// (`BoardView.drawPencilMarks` only ever renders marks when `cell.digit == nil`) — toggling
+    /// one anyway silently recorded it with no way to see or undo it, which is exactly what made
+    /// Shift+digit look broken on any given or already-filled cell.
+    @Test func togglePencilMarkIsANoOpWhenTheCellAlreadyHasADigit() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 0, column: 0)
+        board.setDigit(7, at: target)
+
+        board.togglePencilMark(4, at: target)
+        #expect(board.cell(at: target).pencilMarks.isEmpty)
+
+        // A true no-op shouldn't add its own undo entry either — undoing once should undo the
+        // digit set, not a phantom pencil-mark toggle sitting on top of it.
+        board.undo()
+        #expect(board.cell(at: target).digit == nil)
+    }
+
+    /// A digit cleared later should still surface pencil marks the player made *before* filling
+    /// the cell — clearing a digit must not have wiped them.
+    @Test func pencilMarksMadeBeforeADigitSurviveClearingThatDigit() {
+        var board = Board(cages: Self.makeTestCages())
+        let target = Coordinate(row: 0, column: 0)
+
+        board.togglePencilMark(4, at: target)
+        board.setDigit(7, at: target)
+        board.setDigit(nil, at: target)
+
+        #expect(board.cell(at: target).pencilMarks == [4])
+    }
+
     @Test func cageAtReturnsOwningCage() {
         let board = Board(cages: Self.makeTestCages())
 
