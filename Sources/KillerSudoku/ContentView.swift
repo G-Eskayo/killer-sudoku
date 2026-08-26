@@ -114,6 +114,11 @@ struct ContentView: View {
         guard let selected, !game.isGeneratingNewPuzzle else { return .ignored }
 
         if isDelete(keyPress) {
+            // Pausing the timer should mean pausing the game — editing the board while paused
+            // let you keep solving on a clock that isn't counting it, which defeats the point
+            // of a pausable timer. Arrow-key navigation below stays allowed even while paused;
+            // only actions that change the board are blocked.
+            guard game.timer.isRunning else { return .handled }
             if game.board.cell(at: selected).digit != nil {
                 game.board.setDigit(nil, at: selected)
             } else {
@@ -126,6 +131,7 @@ struct ContentView: View {
         // `key.character` is *not* the unshifted base key despite its name — on a US keyboard,
         // Shift+3 delivers "#", not "3". `DigitKeyInput` resolves either case correctly.
         if let digit = DigitKeyInput.resolve(character: keyPress.key.character, shiftHeld: shiftHeld) {
+            guard game.timer.isRunning else { return .handled }
             if shiftHeld {
                 game.board.togglePencilMark(digit, at: selected)
             } else {
