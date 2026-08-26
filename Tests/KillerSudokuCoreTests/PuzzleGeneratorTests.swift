@@ -20,21 +20,26 @@ import Testing
 
         #expect(PuzzleSolver.countSolutions(cages: board.cages, upTo: 2) == 1)
 
-        // ADR 0006: classic mode's given baseline is pre-filled directly, not left for the
-        // player to notice a single-cell cage's sum equals its own digit.
-        let givenCages = board.cages.filter { $0.cells.count == 1 }
-        #expect((2...4).contains(givenCages.count))
-        for cage in givenCages {
-            #expect(board.cell(at: cage.cells[0]).digit == cage.sum)
+        // ADR 0008: every classic-mode cage is a normal 2-4 cell cage — givens (the ungraded
+        // app-launch puzzle falls back to Medium's range) are pre-filled digits inside whatever
+        // cage they already belong to, not carved into their own single-cell cage.
+        for cage in board.cages {
+            #expect((2...4).contains(cage.cells.count))
         }
+        let givenCount = Coordinate.all.filter { board.cell(at: $0).digit != nil }.count
+        #expect((17...24).contains(givenCount))
     }
 
-    @Test func generateWithDifficultyReturnsAPuzzleGradingAtThatTier() {
+    @Test func generateWithDifficultyReturnsGivenDensityMatchingThatTier() {
         let board = PuzzleGenerator.generate(difficulty: .easy)
 
-        let result = PuzzleSolver.verify(cages: board.cages, upTo: 2)
-        #expect(result.solutionCount == 1)
-        #expect(Difficulty.fromSearchEffort(nodesVisited: result.nodesVisited) == .easy)
+        #expect(PuzzleSolver.countSolutions(cages: board.cages, upTo: 2) == 1)
+        for cage in board.cages {
+            #expect((2...4).contains(cage.cells.count))
+        }
+        // ADR 0008's Easy range.
+        let givenCount = Coordinate.all.filter { board.cell(at: $0).digit != nil }.count
+        #expect((25...40).contains(givenCount))
     }
 
     /// Hybrid mode's givens sit outside the cage system (CONTEXT.md) — unlike classic mode's

@@ -37,26 +37,6 @@ import Testing
         }
     }
 
-    @Test func givensCountProducesThatManySingleCellCages() throws {
-        let cages = try #require(CageLayoutGenerator.generate(for: DemoPuzzle.solutionGrid, givensCount: 3))
-        let singleCellCages = cages.filter { $0.cells.count == 1 }
-        #expect(singleCellCages.count == 3)
-    }
-
-    @Test func givensStillCoverEveryCellExactlyOnceWithNonGivenCagesWithinBounds() throws {
-        let cages = try #require(CageLayoutGenerator.generate(for: DemoPuzzle.solutionGrid, givensCount: 3))
-
-        var seen: Set<Coordinate> = []
-        for cage in cages {
-            for coordinate in cage.cells {
-                #expect(!seen.contains(coordinate), "duplicate coverage at \(coordinate)")
-                seen.insert(coordinate)
-            }
-            #expect((1...4).contains(cage.cells.count))
-        }
-        #expect(seen.count == 81)
-    }
-
     /// Regression test for a real hang found while building issue #3: a region with a cell
     /// boxed in by holes on all four sides (no possible cage-mate) is a *structural* dead end —
     /// no amount of retrying with different random growth order can ever succeed, since the

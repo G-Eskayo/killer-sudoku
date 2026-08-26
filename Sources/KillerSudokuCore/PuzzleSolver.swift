@@ -3,9 +3,10 @@
 /// search once a second solution proves the puzzle isn't unique. Used by [[PuzzleGenerator]] to
 /// verify a generated layout before presenting it to the player.
 public enum PuzzleSolver {
-    /// `nodesVisited` is exposed for callers that want it as a difficulty signal (search effort
-    /// needed to fully verify uniqueness correlates with how hard a puzzle is to crack, even
-    /// though it isn't naming which human technique would be needed) — see `DifficultyGrader`.
+    /// `nodesVisited` is exposed for informational/diagnostic use — search effort needed to
+    /// fully verify uniqueness roughly correlates with how hard a puzzle is to crack, though it
+    /// isn't currently consumed by any grading logic ([[0008]]: classic mode's difficulty comes
+    /// from given-density instead, decided before this search ever runs).
     public struct VerificationResult: Sendable {
         public let solutionCount: Int?
         public let nodesVisited: Int
@@ -17,10 +18,15 @@ public enum PuzzleSolver {
     /// discard a hard instance and try a fresh one than to fight one search to the end. Node
     /// count (not wall-clock time) makes the cutoff deterministic and machine-independent.
     ///
-    /// `givens` are hybrid mode's pre-filled cells that sit outside the cage system entirely
-    /// ([[CONTEXT.md]]) — they're placed before the search starts and never revisited, same as
-    /// any other already-filled cell, but contribute no cage constraint since they're not part
-    /// of one.
+    /// `givens` are pre-filled cells, placed before the search starts and never revisited, same
+    /// as any other already-filled cell. Hybrid mode is the current caller: its givens sit
+    /// outside the cage system entirely ([[CONTEXT.md]]) and are load-bearing for uniqueness (a
+    /// hybrid puzzle's validity is checked as cages-plus-givens together, since the given cells
+    /// aren't covered by any cage at all). `SolverState.init` looks up each given's real cage
+    /// membership rather than assuming it's always cage-exempt, so a given that *does* overlap a
+    /// cage (classic mode's givens, [[0008]] — not currently passed through this parameter,
+    /// since classic-mode uniqueness is checked from cage structure alone before givens are even
+    /// chosen) would still be credited correctly if a future caller needed that combination.
     public static func verify(
         cages: [Cage], givens: [Coordinate: Int] = [:], upTo cap: Int, nodeBudget: Int = 20_000
     ) -> VerificationResult {
@@ -72,7 +78,7 @@ private final class SolverState {
 
         for (coordinate, digit) in givens {
             let position = coordinate.row * 9 + coordinate.column
-            place(digit, bit: 1 << (digit - 1), position: position, row: coordinate.row, column: coordinate.column, box: coordinate.boxIndex, cageIndex: -1)
+            place(digit, bit: 1 << (digit - 1), position: position, row: coordinate.row, column: coordinate.column, box: coordinate.boxIndex, cageIndex: index[position])
         }
     }
 

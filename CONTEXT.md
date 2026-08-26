@@ -14,40 +14,39 @@ Domain terms only. No implementation details — see `docs/adr/` for decisions a
 - **Cage sum**: the target total shown in the top-left corner of a cage, which the digits placed
   in that cage's cells must add up to exactly once the cage is fully filled.
 - **Given**: a digit pre-filled by the puzzle before the player starts, exactly as in standard
-  Sudoku. In classic mode a given is always represented as a **single-cell cage** (a cage of
-  size 1 — its "sum" is just that one cell's digit, so it's unambiguous by construction); in
-  hybrid mode givens sit outside the cage system entirely, pre-filled directly like a normal
-  Sudoku clue. See [[0006]] for why classic mode has givens at all.
+  Sudoku. In classic mode a given is an ordinary member of its normal 2-4 cell cage — the cage's
+  size, sum, and border are unaffected, one of its cells just already shows its digit. In hybrid
+  mode givens sit outside the cage system entirely, pre-filled directly like a normal Sudoku clue
+  — a different mechanic, not a smaller version of classic mode's. See [[0008]] for why classic
+  mode has givens at all and why they're no longer single-cell cages ([[0006]], superseded).
 
 ## Modes
 
-- **Classic mode**: a small, constant baseline of givens (2-4 single-cell cages) at every
-  non-Beginner tier, with the rest of the grid 100% covered by cages sized 2-4 — not the fully
-  given-less "purist" form originally envisioned. [[0006]] documents why: real-world Killer
-  Sudoku generators (researched during issue #2) don't attempt zero-given, procedurally-graded
-  classic puzzles either — they all lean on a small constant given baseline to make the grid
-  breakable at all, independent of difficulty tier. The baseline stays constant across Easy
-  through Expert; what actually differentiates tiers is cage shape/size and, per [[0007]], how
-  much solver search effort the resulting puzzle takes to crack.
+- **Classic mode**: 100% of the grid is covered by cages sized 2-4 — no single-cell cages. A
+  given-count is drawn from a per-tier range ([[0008]]) and revealed inside whatever cage those
+  cells already belong to. Given-density *is* the difficulty lever for classic mode (sparse at
+  Expert, dense at Easy) — see Difficulty below.
 - **Hybrid mode**: substantially more givens are pre-filled (like standard Sudoku) alongside
   cages covering the rest of the grid, making the puzzle meaningfully more approachable than
-  classic mode's small baseline. Used for the Beginner difficulty tier only — the more
-  pre-filled, more onboarding-friendly end of the same givens spectrum classic mode's baseline
-  sits at the other end of, not a separate mechanic.
+  classic mode. Used for the Beginner difficulty tier only, at a fixed given-count independent of
+  the other tiers' scaling.
 
 ## Difficulty
 
 - **Difficulty tier**: one of Beginner, Easy, Medium, Hard, Expert — five tiers total, Expert is
   the single top tier ([[0005]]). Beginner is hybrid mode; every tier above it is classic mode.
+- **Given-density difficulty signal**: classic mode's active difficulty signal ([[0008]]) — how
+  many of the 81 cells are revealed as givens, scaled by tier (Expert sparsest, Easy densest).
+  Decided directly at generation time, not discovered by retrying and re-checking. Supersedes two
+  earlier attempts: solving-technique simulation ([[0003]]) and solver search effort ([[0007]]),
+  neither of which is used for classic-mode grading anymore — see [[0008]] for why.
 - **Solving-technique grading**: originally meant determining which solving techniques a puzzle
   *requires* (basic cage-sum arithmetic and single candidates for low tiers, advanced cage-
   combination deduction for high tiers) rather than a structural heuristic like cage count or
   size — [[0003]]. In practice this never differentiated real classic-mode puzzles at all (every
-  one graded hardest-tier regardless of actual difficulty, even after real technique additions
-  and a given baseline — [[0006]]), so classic mode's active difficulty signal is now the
-  generator's own solver search effort during unique-solution verification instead — [[0007]].
-  The technique simulator itself is still real, tested code; it's just not what classic mode's
-  New Puzzle flow currently uses.
+  one graded hardest-tier regardless of actual difficulty). The technique simulator
+  (`DifficultyGrader`) itself is still real, tested code; it's just never been what classic mode's
+  New Puzzle flow actually uses for grading.
 
 ## Play-state indicators
 
