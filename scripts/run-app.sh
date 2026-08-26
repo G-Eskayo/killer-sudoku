@@ -9,7 +9,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-CONFIG="${1:-debug}"
+#
+# Defaults to release, not debug: ADR 0014 found the whole session's puzzle-generation timing
+# work had been measuring an unoptimized debug build the entire time -- release alone (no other
+# change) cut generation from ~3-4s average to ~1s. Pass "debug" explicitly if you need faster
+# compile times while iterating and don't care about runtime speed.
+CONFIG="${1:-release}"
 APP_NAME="KillerSudoku"
 APP_BUNDLE=".build/${APP_NAME}.app"
 BUNDLE_ID="me.gileskayo.killersudoku"
