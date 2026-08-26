@@ -257,6 +257,45 @@ public struct Board: Sendable {
         return matches
     }
 
+    /// Cage IDs fully filled with a valid (correct-sum, no-repeat) set of digits right now — a
+    /// pure snapshot, not a transition. [[BoardView]] diffs this against its previous value
+    /// itself to trigger a one-time completion animation per cage (issue #10).
+    public func correctlyCompletedCageIDs() -> Set<Int> {
+        var completed: Set<Int> = []
+        for cage in cages {
+            let digits = cage.cells.compactMap { cell(at: $0).digit }
+            guard digits.count == cage.cells.count, Set(digits).count == digits.count,
+                  digits.reduce(0, +) == cage.sum else { continue }
+            completed.insert(cage.id)
+        }
+        return completed
+    }
+
+    /// Row indices (0-8) with all 9 cells filled and no repeated digit — same snapshot contract
+    /// as `correctlyCompletedCageIDs`.
+    public func correctlyCompletedRowIndices() -> Set<Int> {
+        Set((0..<9).filter { row in
+            let digits = (0..<9).compactMap { cell(at: Coordinate(row: row, column: $0)).digit }
+            return digits.count == 9 && Set(digits).count == 9
+        })
+    }
+
+    /// Column indices (0-8) with all 9 cells filled and no repeated digit.
+    public func correctlyCompletedColumnIndices() -> Set<Int> {
+        Set((0..<9).filter { column in
+            let digits = (0..<9).compactMap { cell(at: Coordinate(row: $0, column: column)).digit }
+            return digits.count == 9 && Set(digits).count == 9
+        })
+    }
+
+    /// 3x3 box indices (0-8) with all 9 cells filled and no repeated digit.
+    public func correctlyCompletedBoxIndices() -> Set<Int> {
+        Set((0..<9).filter { boxIndex in
+            let digits = boxCoordinates(boxIndex).compactMap { cell(at: $0).digit }
+            return digits.count == 9 && Set(digits).count == 9
+        })
+    }
+
     private func boxCoordinates(_ boxIndex: Int) -> [Coordinate] {
         let startRow = (boxIndex / 3) * 3
         let startColumn = (boxIndex % 3) * 3

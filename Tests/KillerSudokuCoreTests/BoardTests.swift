@@ -445,6 +445,67 @@ import Foundation
         #expect(board.cell(at: target).pencilMarks == [2, 5])
     }
 
+    @Test func correctlyCompletedCageIDsIncludesAFullyAndCorrectlyFilledCage() {
+        var board = Board(cages: Self.makeTestCages())
+        board.setDigit(3, at: Coordinate(row: 0, column: 0))
+        board.setDigit(5, at: Coordinate(row: 0, column: 1))
+
+        #expect(board.correctlyCompletedCageIDs() == [0])
+    }
+
+    @Test func correctlyCompletedCageIDsExcludesAPartiallyFilledCage() {
+        var board = Board(cages: Self.makeTestCages())
+        board.setDigit(3, at: Coordinate(row: 0, column: 0))
+
+        #expect(board.correctlyCompletedCageIDs().isEmpty)
+    }
+
+    @Test func correctlyCompletedCageIDsExcludesAFullCageWithTheWrongSum() {
+        var board = Board(cages: Self.makeTestCages())
+        board.setDigit(1, at: Coordinate(row: 0, column: 0))
+        board.setDigit(2, at: Coordinate(row: 0, column: 1))
+
+        #expect(board.correctlyCompletedCageIDs().isEmpty)
+    }
+
+    @Test func correctlyCompletedRowIndicesIncludesARowOfNineDistinctDigits() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for column in 0..<9 {
+            board.setDigit(DemoPuzzle.solutionGrid[0][column], at: Coordinate(row: 0, column: column))
+        }
+
+        #expect(board.correctlyCompletedRowIndices() == [0])
+    }
+
+    @Test func correctlyCompletedRowIndicesExcludesAnIncompleteRow() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for column in 0..<8 {
+            board.setDigit(DemoPuzzle.solutionGrid[0][column], at: Coordinate(row: 0, column: column))
+        }
+
+        #expect(board.correctlyCompletedRowIndices().isEmpty)
+    }
+
+    @Test func correctlyCompletedColumnIndicesIncludesAColumnOfNineDistinctDigits() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for row in 0..<9 {
+            board.setDigit(DemoPuzzle.solutionGrid[row][0], at: Coordinate(row: row, column: 0))
+        }
+
+        #expect(board.correctlyCompletedColumnIndices() == [0])
+    }
+
+    @Test func correctlyCompletedBoxIndicesIncludesABoxOfNineDistinctDigits() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for row in 0..<3 {
+            for column in 0..<3 {
+                board.setDigit(DemoPuzzle.solutionGrid[row][column], at: Coordinate(row: row, column: column))
+            }
+        }
+
+        #expect(board.correctlyCompletedBoxIndices() == [0])
+    }
+
     @Test func isNotSolvedWhenFullyFilledButWithAMistake() {
         var board = Board(cages: DemoPuzzle.makeCages())
         for row in 0..<9 {
