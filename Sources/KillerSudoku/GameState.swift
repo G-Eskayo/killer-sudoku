@@ -19,12 +19,12 @@ final class GameState: ObservableObject {
     /// doesn't own storage here.
     @Published var timer = PuzzleTimer()
     /// True while a New Puzzle request (issue #2) is generating in the background — generation
-    /// can take anywhere from well under a second to tens of seconds (ADR 0007), so the UI needs
-    /// a loading state rather than freezing on the main thread for an explicit user action.
+    /// usually takes a few seconds even with ADR 0010's parallel batching, so the UI needs a
+    /// loading state rather than freezing on the main thread for an explicit user action.
     @Published private(set) var isGeneratingNewPuzzle = false
-    /// The tier the current puzzle was requested at, or nil when it has no known tier (the
-    /// app-launch puzzle — see `PuzzleGenerator.generate()`'s doc comment). Persisted alongside
-    /// the board (issue #9) so a restored puzzle still records to the right tier on completion.
+    /// The tier the current puzzle was requested at. Always a real tier since ADR 0011 — there's
+    /// no more "ungraded" puzzle that can't record a solve anywhere. Persisted alongside the
+    /// board (issue #9) so a restored puzzle still records to the right tier on completion.
     @Published private(set) var currentDifficulty: Difficulty?
     /// Guards against recording the same completed puzzle twice — `$board` publishes on every
     /// edit, so once a solve is recorded for this puzzle instance, further edits (e.g. an undo

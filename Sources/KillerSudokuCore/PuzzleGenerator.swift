@@ -7,8 +7,8 @@ import Foundation
 /// This is the app's single public entry point for puzzle generation — everything else in this
 /// file's sibling types is implementation detail.
 public enum PuzzleGenerator {
-    /// ADR 0008's per-tier given-count ranges, out of 81 cells. The ungraded app-launch puzzle
-    /// (`generate()`, no tier requested) falls back to `.medium`'s range as a reasonable default.
+    /// ADR 0008's per-tier given-count ranges, out of 81 cells. ADR 0011: every puzzle gets a
+    /// real tier now — there's no more "ungraded" case to fall back for.
     private static let classicGivensRanges: [Difficulty: ClosedRange<Int>] = [
         .easy: 25...40,
         .medium: 17...24,
@@ -16,14 +16,11 @@ public enum PuzzleGenerator {
         .expert: 4...8,
     ]
 
-    public static func generate() -> Board {
-        attemptClassicInParallel(requiring: nil)
-    }
-
     /// Regenerates until [[PuzzleSolver]] confirms exactly one solution — the "New Puzzle" flow
-    /// (issue #2). Given-density is chosen directly from the requested tier's range, not
-    /// discovered after the fact, so this never needs a second retry condition for the tier
-    /// itself (ADR 0008).
+    /// (issue #2), and also the app-launch fallback when there's no saved puzzle to restore
+    /// (ADR 0011: always at an explicit tier, never ungraded). Given-density is chosen directly
+    /// from the requested tier's range, not discovered after the fact, so this never needs a
+    /// second retry condition for the tier itself (ADR 0008).
     public static func generate(difficulty: Difficulty) -> Board {
         attemptClassicInParallel(requiring: difficulty)
     }
@@ -36,7 +33,7 @@ public enum PuzzleGenerator {
     /// independent of each other, so running a whole batch at once across CPU cores turns serial
     /// retry cost into parallel retry cost. Waits for the *whole* batch even after one succeeds
     /// (see `ResultBox`'s doc comment for why) rather than cancelling in-flight attempts early.
-    private static func attemptClassicInParallel(requiring difficulty: Difficulty?) -> Board {
+    private static func attemptClassicInParallel(requiring difficulty: Difficulty) -> Board {
         let batchSize = max(1, ProcessInfo.processInfo.activeProcessorCount)
         while true {
             let box = ResultBox()
@@ -56,12 +53,12 @@ public enum PuzzleGenerator {
     /// bonus reveal layered on top, not something the puzzle's validity should depend on.
     /// Checking cage+givens together here would let a genuinely ambiguous cage layout slip
     /// through whenever the chosen givens happened to rule out its other solutions.
-    private static func attemptClassic(requiring difficulty: Difficulty?) -> Board? {
+    private static func attemptClassic(requiring difficulty: Difficulty) -> Board? {
         let grid = SudokuGridGenerator.generate()
         guard let cages = CageLayoutGenerator.generate(for: grid) else { return nil }
         guard PuzzleSolver.verify(cages: cages, upTo: 2).solutionCount == 1 else { return nil }
 
-        let givenCount = Int.random(in: classicGivensRanges[difficulty ?? .medium]!)
+        let givenCount = Int.random(in: classicGivensRanges[difficulty]!)
         let givenCoordinates = Set(Coordinate.all.shuffled().prefix(givenCount))
         let givens = Dictionary(uniqueKeysWithValues: givenCoordinates.map { ($0, grid[$0.row][$0.column]) })
         return board(for: cages, givens: givens)

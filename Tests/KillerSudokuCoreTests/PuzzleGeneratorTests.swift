@@ -2,12 +2,13 @@ import Testing
 @testable import KillerSudokuCore
 
 @Suite struct PuzzleGeneratorTests {
-    /// Both assertions share one `generate()` call rather than each generating their own puzzle:
+    /// Both assertions share one `generate` call rather than each generating their own puzzle:
     /// generation retries until a candidate verifies as uniquely solvable, which can take a real
     /// number of seconds (see PuzzleSolver's node-budget doc comment) — cheap correctness checks
     /// on a board we already generated shouldn't double that cost by generating a second one.
+    /// ADR 0011 removed the ungraded `generate()` overload — every puzzle has a real tier now.
     @Test func returnedBoardCoversEveryCellExactlyOnceWithExactlyOneSolution() {
-        let board = PuzzleGenerator.generate()
+        let board = PuzzleGenerator.generate(difficulty: .medium)
 
         var seen: Set<Coordinate> = []
         for cage in board.cages {
@@ -20,9 +21,9 @@ import Testing
 
         #expect(PuzzleSolver.countSolutions(cages: board.cages, upTo: 2) == 1)
 
-        // ADR 0008: every classic-mode cage is a normal 2-4 cell cage — givens (the ungraded
-        // app-launch puzzle falls back to Medium's range) are pre-filled digits inside whatever
-        // cage they already belong to, not carved into their own single-cell cage.
+        // ADR 0008: every classic-mode cage is a normal 2-4 cell cage — givens are pre-filled
+        // digits inside whatever cage they already belong to, not carved into their own
+        // single-cell cage.
         for cage in board.cages {
             #expect((2...4).contains(cage.cells.count))
         }

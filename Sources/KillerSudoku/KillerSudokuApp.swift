@@ -24,8 +24,12 @@ struct KillerSudokuApp: App {
 
         let context = ModelContext(container)
         let restored = PuzzleStore.load(context: context)
-        let board = restored?.board ?? PuzzleGenerator.generate()
-        _game = StateObject(wrappedValue: GameState(board: board, difficulty: restored?.difficulty, modelContext: context))
+        // ADR 0011: every puzzle gets a real difficulty tier, never "ungraded" — a solve on a
+        // puzzle with no known tier had nowhere to record in StatsStore, which read as "nothing
+        // logged" even after genuinely completing a puzzle.
+        let difficulty = restored?.difficulty ?? .medium
+        let board = restored?.board ?? PuzzleGenerator.generate(difficulty: difficulty)
+        _game = StateObject(wrappedValue: GameState(board: board, difficulty: difficulty, modelContext: context))
     }
 
     var body: some Scene {

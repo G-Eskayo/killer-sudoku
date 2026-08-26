@@ -8,10 +8,14 @@ import SwiftData
 public final class SavedPuzzle {
     public var boardData: Data
     public var updatedAt: Date
-    /// The tier this puzzle was requested at via "New Puzzle" (issue #2/#9), or nil for the
-    /// app-launch puzzle (`PuzzleGenerator.generate()` is ungraded — see its doc comment) — kept
-    /// alongside the board so a puzzle restored after relaunch still records to the right tier
-    /// in [[StatsStore]] on completion.
+    /// The tier this puzzle was requested at via "New Puzzle" (issue #2/#9) — kept alongside the
+    /// board so a puzzle restored after relaunch still records to the right tier in [[StatsStore]]
+    /// on completion. Stored as a raw `Int` rather than `Difficulty` directly for the same reason
+    /// [[SolveRecord]] does (see its doc comment) — and ADR 0011 is the reason that reason
+    /// actually matters: an implicit raw value silently reinterprets as a *different* tier if the
+    /// case list ever changes, rather than failing to decode. Optional only for old records
+    /// predating ADR 0011's "always a real tier" guarantee; `PuzzleStore`/`KillerSudokuApp`
+    /// default a nil read to `.medium` rather than ever passing nil onward.
     public var difficultyRawValue: Int?
 
     public init(board: Board, difficulty: Difficulty?) throws {

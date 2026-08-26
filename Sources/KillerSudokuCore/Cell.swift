@@ -9,4 +9,19 @@ public struct Cell: Sendable, Codable {
         self.digit = digit
         self.isGiven = isGiven
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case digit, pencilMarks, isGiven
+    }
+
+    /// Decodes `isGiven` as absent-means-false (ADR 0011) rather than requiring the key, so a
+    /// saved puzzle encoded before this field existed still decodes instead of silently failing
+    /// and discarding the player's in-progress puzzle. `encode(to:)` stays compiler-synthesized —
+    /// only decoding needs this tolerance.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        digit = try container.decodeIfPresent(Int.self, forKey: .digit)
+        pencilMarks = try container.decodeIfPresent(Set<Int>.self, forKey: .pencilMarks) ?? []
+        isGiven = try container.decodeIfPresent(Bool.self, forKey: .isGiven) ?? false
+    }
 }
