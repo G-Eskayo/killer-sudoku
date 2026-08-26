@@ -140,13 +140,19 @@ struct BoardView: View {
         }
     }
 
+    /// The whole 3x3 mark grid is inset from the cell edges — not just made smaller — so its
+    /// top-left slot (digit 1) clears `drawCageSums`'s label, which always sits in the cell's
+    /// top-left corner. A uniform shrink alone would still leave slot 1 anchored at the same
+    /// corner the sum label occupies.
+    private static let pencilMarkInset: CGFloat = 12
+
     private func drawPencilMarks(in context: inout GraphicsContext) {
         for row in 0..<9 {
             for column in 0..<9 {
                 let cell = board.cell(at: Coordinate(row: row, column: column))
                 guard cell.digit == nil, !cell.pencilMarks.isEmpty else { continue }
-                let rect = cellRect(row: row, column: column)
-                let subCell = cellSize / 3
+                let rect = cellRect(row: row, column: column).insetBy(dx: Self.pencilMarkInset, dy: Self.pencilMarkInset)
+                let subCell = rect.width / 3
 
                 for mark in cell.pencilMarks {
                     let slot = mark - 1
