@@ -33,4 +33,29 @@ import Testing
         let count = PuzzleSolver.countSolutions(cages: cages, upTo: 2)
         #expect(count == 2)
     }
+
+    /// ADR 0013: an always-true `isCancelled` should abort within a small, bounded number of
+    /// nodes (the poll interval) rather than running the search to its natural conclusion —
+    /// this is what lets a batch of parallel attempts stop the moment any one of them succeeds.
+    @Test func cancellationAbortsQuicklyWithAnInconclusiveResult() {
+        let result = PuzzleSolver.verify(cages: DemoPuzzle.makeCages(), upTo: 2, isCancelled: { true })
+
+        #expect(result.solutionCount == nil)
+        #expect(result.nodesVisited <= 256)
+    }
+
+    /// A closure that always returns false must never itself cause an abort — verified by
+    /// confirming it's actually polled (not a vacuous test) rather than by comparing outcomes
+    /// against a separate call, which would be flaky: `step()`'s digit exploration order is
+    /// randomized per call, so two independent searches over the same cages can legitimately
+    /// take very different numbers of nodes.
+    @Test func aFalseIsCancelledDoesNotAbortTheSearch() {
+        var callCount = 0
+        _ = PuzzleSolver.verify(cages: DemoPuzzle.makeCages(), upTo: 2, isCancelled: {
+            callCount += 1
+            return false
+        })
+
+        #expect(callCount >= 1)
+    }
 }

@@ -17,10 +17,16 @@ public enum PuzzleSolver {
     /// expensive to prove either way, and it's cheaper for a caller like [[PuzzleGenerator]] to
     /// discard a hard instance and try a fresh one than to fight one search to the end. Node
     /// count (not wall-clock time) makes the cutoff deterministic and machine-independent.
+    ///
+    /// `isCancelled`, if given, is polled every 256 nodes (frequent enough to abort promptly,
+    /// infrequent enough that the check itself is noise against per-node cost) and treated the
+    /// same as exceeding the node budget — inconclusive, not a definite answer. ADR 0013: this is
+    /// what lets a parallel batch of attempts stop the moment any one of them succeeds, instead
+    /// of every attempt always running to its own natural conclusion regardless of the others.
     public static func verify(
-        cages: [Cage], upTo cap: Int, nodeBudget: Int = 20_000
+        cages: [Cage], upTo cap: Int, nodeBudget: Int = 20_000, isCancelled: (() -> Bool)? = nil
     ) -> VerificationResult {
-        let state = SolverState(cages: cages, nodeBudget: nodeBudget)
+        let state = SolverState(cages: cages, nodeBudget: nodeBudget, isCancelled: isCancelled)
         state.search(upTo: cap)
         return VerificationResult(
             solutionCount: state.exceededBudget ? nil : state.solutionCount,
@@ -49,13 +55,15 @@ private final class SolverState {
     private var cageFilledCount: [Int]
     private var cap = 0
     private let nodeBudget: Int
+    private let isCancelled: (() -> Bool)?
     private(set) var nodesVisited = 0
     private(set) var solutionCount = 0
     private(set) var exceededBudget = false
 
-    init(cages: [Cage], nodeBudget: Int) {
+    init(cages: [Cage], nodeBudget: Int, isCancelled: (() -> Bool)? = nil) {
         self.cages = cages
         self.nodeBudget = nodeBudget
+        self.isCancelled = isCancelled
         var index = [Int](repeating: -1, count: 81)
         for (cageIndex, cage) in cages.enumerated() {
             for cell in cage.cells { index[cell.row * 9 + cell.column] = cageIndex }
@@ -76,6 +84,10 @@ private final class SolverState {
         guard solutionCount < cap else { return }
         nodesVisited += 1
         guard nodesVisited <= nodeBudget else {
+            exceededBudget = true
+            return
+        }
+        if (nodesVisited == 1 || nodesVisited % 256 == 0), let isCancelled, isCancelled() {
             exceededBudget = true
             return
         }
