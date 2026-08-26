@@ -1,3 +1,5 @@
+import Foundation
+
 /// Generates a fresh, on-device Killer Sudoku puzzle: a random solved grid (ADR 0003), fully
 /// partitioned into normal 2-4 cell cages, with a per-tier count of cells revealed as givens
 /// inside whatever cage they already belong to (ADR 0008) — given-density *is* the difficulty
@@ -15,11 +17,7 @@ public enum PuzzleGenerator {
     ]
 
     public static func generate() -> Board {
-        while true {
-            if let board = attemptClassic(requiring: nil) {
-                return board
-            }
-        }
+        attemptClassicInParallel(requiring: nil)
     }
 
     /// Regenerates until [[PuzzleSolver]] confirms exactly one solution — the "New Puzzle" flow
@@ -27,10 +25,27 @@ public enum PuzzleGenerator {
     /// discovered after the fact, so this never needs a second retry condition for the tier
     /// itself (ADR 0008).
     public static func generate(difficulty: Difficulty) -> Board {
+        attemptClassicInParallel(requiring: difficulty)
+    }
+
+    /// ADR 0010: profiling found ~85-95% of individual attempts fail (a random cage layout is
+    /// non-unique far more often than not), and each failure still costs a real solver search
+    /// (often near the full node budget) before giving up — grid/cage generation themselves are
+    /// negligible by comparison. Attempts share no state and don't get faster with a smaller
+    /// node budget (measured: it just forces more retries, net slower), but they're fully
+    /// independent of each other, so running a whole batch at once across CPU cores turns serial
+    /// retry cost into parallel retry cost. Waits for the *whole* batch even after one succeeds
+    /// (see `ResultBox`'s doc comment for why) rather than cancelling in-flight attempts early.
+    private static func attemptClassicInParallel(requiring difficulty: Difficulty?) -> Board {
+        let batchSize = max(1, ProcessInfo.processInfo.activeProcessorCount)
         while true {
-            if let board = attemptClassic(requiring: difficulty) {
-                return board
+            let box = ResultBox()
+            DispatchQueue.concurrentPerform(iterations: batchSize) { _ in
+                if let board = attemptClassic(requiring: difficulty) {
+                    box.setIfEmpty(board)
+                }
             }
+            if let board = box.get() { return board }
         }
     }
 
@@ -61,5 +76,27 @@ public enum PuzzleGenerator {
             cells[coordinate.row][coordinate.column] = Cell(digit: digit, isGiven: true)
         }
         return Board(cages: cages, cells: cells)
+    }
+}
+
+/// Thread-safe "first one wins" slot for `attemptClassicInParallel`'s concurrent batch.
+/// `DispatchQueue.concurrentPerform` has no built-in way to cancel the other iterations once one
+/// succeeds (and `attemptClassic` isn't structured to check a cancellation flag mid-search, so
+/// there'd be nothing to cancel into anyway) — every iteration in a batch runs to completion
+/// regardless, and this just records whichever succeeds first among them.
+private final class ResultBox: @unchecked Sendable {
+    private var value: Board?
+    private let lock = NSLock()
+
+    func setIfEmpty(_ board: Board) {
+        lock.lock()
+        defer { lock.unlock() }
+        if value == nil { value = board }
+    }
+
+    func get() -> Board? {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
     }
 }
