@@ -506,16 +506,55 @@ import Foundation
         #expect(board.correctlyCompletedBoxIndices() == [0])
     }
 
-    @Test func isNotSolvedWhenFullyFilledButWithAMistake() {
+    /// Regression test: a solved board could still be edited (clear a cell, retype a digit),
+    /// which could flip `isSolved` false->true again and re-trigger the completion flow. A
+    /// solved board must refuse every further mutation, not just protect givens.
+    @Test func setDigitIsANoOpOnceTheBoardIsSolved() {
         var board = Board(cages: DemoPuzzle.makeCages())
         for row in 0..<9 {
             for column in 0..<9 {
                 board.setDigit(DemoPuzzle.solutionGrid[row][column], at: Coordinate(row: row, column: column))
             }
         }
-        // Swap two digits within row 0 so the row still has all 9 cells filled but now has a
-        // duplicate (a real mistake, not just "different from the known solution").
-        board.setDigit(DemoPuzzle.solutionGrid[0][0], at: Coordinate(row: 0, column: 1))
+        #expect(board.isSolved)
+
+        let target = Coordinate(row: 0, column: 0)
+        board.setDigit(nil, at: target)
+
+        #expect(board.cell(at: target).digit == DemoPuzzle.solutionGrid[0][0])
+        #expect(board.isSolved)
+    }
+
+    @Test func undoIsANoOpOnceTheBoardIsSolved() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        for row in 0..<9 {
+            for column in 0..<9 {
+                board.setDigit(DemoPuzzle.solutionGrid[row][column], at: Coordinate(row: row, column: column))
+            }
+        }
+        #expect(board.isSolved)
+
+        board.undo()
+
+        #expect(board.isSolved)
+        #expect(board.cell(at: Coordinate(row: 8, column: 8)).digit == DemoPuzzle.solutionGrid[8][8])
+    }
+
+    @Test func isNotSolvedWhenFullyFilledButWithAMistake() {
+        var board = Board(cages: DemoPuzzle.makeCages())
+        // Fills everything except (0,1) with the correct solution, then fills (0,1) with a
+        // duplicate of (0,0) instead of its own value — reaching "fully filled but mistaken"
+        // without ever passing through a genuinely solved intermediate state, which `setDigit`
+        // now refuses to edit further.
+        let duplicateTarget = Coordinate(row: 0, column: 1)
+        for row in 0..<9 {
+            for column in 0..<9 {
+                let coordinate = Coordinate(row: row, column: column)
+                guard coordinate != duplicateTarget else { continue }
+                board.setDigit(DemoPuzzle.solutionGrid[row][column], at: coordinate)
+            }
+        }
+        board.setDigit(DemoPuzzle.solutionGrid[0][0], at: duplicateTarget)
 
         #expect(!board.isSolved)
     }

@@ -44,12 +44,16 @@ public struct Board: Sendable {
         cageIndexByCoordinate[coordinate].map { cages[$0] }
     }
 
-    /// A no-op on a given cell (ADR 0008's pre-filled digits aren't a player edit) or when the
-    /// new value matches what's already there. Placing a real digit (not clearing one) also
+    /// A no-op once the board is solved: a finished puzzle is frozen, not just "given cells are
+    /// protected" — without this, clearing and retyping a cell's digit could flip `isSolved`
+    /// false->true again and re-trigger the completion flow as if it were a fresh solve. Also a
+    /// no-op on a given cell (ADR 0008's pre-filled digits aren't a player edit) or when the new
+    /// value matches what's already there. Placing a real digit (not clearing one) also
     /// auto-eliminates that same digit from every row/column/box peer's pencil marks — standard
     /// Sudoku assist behavior — recorded as part of this same edit so undo/redo moves both
     /// together.
     public mutating func setDigit(_ digit: Int?, at coordinate: Coordinate) {
+        guard !isSolved else { return }
         guard !cells[coordinate.row][coordinate.column].isGiven else { return }
         let previous = cells[coordinate.row][coordinate.column].digit
         guard previous != digit else { return }
@@ -101,8 +105,11 @@ public struct Board: Sendable {
 
     /// Undoes the most recent edit (digit set/clear, pencil-mark toggle, or pencil-marks clear),
     /// walking back through the full session history one step at a time. A no-op with nothing
-    /// left to undo.
+    /// left to undo, or once the board is solved — undoing the move that completed it would
+    /// unsolve the board and reopen `setDigit`'s lock, letting the player edit a "finished"
+    /// puzzle again through the back door.
     public mutating func undo() {
+        guard !isSolved else { return }
         guard let edit = undoStack.popLast() else { return }
         switch edit {
         case .digit(let coordinate, let previous, let next, let eliminatedPeers):
@@ -121,8 +128,11 @@ public struct Board: Sendable {
     }
 
     /// Redoes the most recently undone edit. A new edit made after an undo truncates this stack
-    /// (standard undo/redo semantics) since `record` clears it.
+    /// (standard undo/redo semantics) since `record` clears it. Also a no-op once the board is
+    /// solved — a stale redo entry from before a completing edit must not reach back in and
+    /// mutate a now-finished board.
     public mutating func redo() {
+        guard !isSolved else { return }
         guard let edit = redoStack.popLast() else { return }
         switch edit {
         case .digit(let coordinate, _, let next, let eliminatedPeers):

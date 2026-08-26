@@ -78,6 +78,10 @@ struct ContentView: View {
                 game.startNewPuzzle(difficulty: tier)
             }
         }
+        // The only way out is picking a New Puzzle tier — no Escape-key or click-outside
+        // dismissal back to a "finished" board (which `Board`'s own solved-lock now also
+        // refuses to let you edit further anyway; this keeps the UI consistent with that).
+        .interactiveDismissDisabled(completionSnapshot != nil)
     }
 
     private func handle(keyPress: KeyPress) -> KeyPress.Result {
