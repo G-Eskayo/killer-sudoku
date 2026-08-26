@@ -3,3 +3,8 @@
 *.xcodeproj
 DerivedData/
 .DS_Store
+
+# Kotlin desktop port (desktop-kotlin/)
+desktop-kotlin/.gradle/
+desktop-kotlin/.kotlin/
+desktop-kotlin/build/

@@ -1,7 +1,14 @@
 # Killer Sudoku
 
-A native macOS Killer Sudoku app — SwiftUI + Canvas, fully on-device puzzle generation, no ads,
-no accounts, no network calls at all.
+A native Killer Sudoku app — fully on-device puzzle generation, no ads, no accounts, no network
+calls at all. Two builds share the same rules, the same puzzle-generation logic, and the same
+UI/UX, built for different reach:
+
+- **macOS app** (`Sources/`) — SwiftUI + Canvas, native to the Mac.
+- **Desktop app for macOS, Windows, and Linux** (`desktop-kotlin/`) — Kotlin + Compose
+  Multiplatform, its own renderer so the look matches the Swift build cell-for-cell.
+
+Pick whichever build matches your OS in [Building and running](#building-and-running) below.
 
 ![Killer Sudoku gameplay](docs/screenshots/gameplay.png)
 
@@ -40,6 +47,8 @@ A few things that aren't obvious from the UI alone:
 
 ## Building and running
 
+### macOS (SwiftUI)
+
 Requires macOS 14+ and a Swift 6 toolchain (Xcode 16+, or the Swift.org toolchain).
 
 ```sh
@@ -58,8 +67,38 @@ To run the test suite instead:
 swift test
 ```
 
+### macOS, Windows, or Linux (Kotlin + Compose Multiplatform)
+
+Requires a JDK 17+. No separate Gradle install needed — the wrapper downloads it.
+
+```sh
+git clone https://github.com/G-Eskayo/killer-sudoku.git
+cd killer-sudoku/desktop-kotlin
+./gradlew run          # macOS/Linux
+gradlew.bat run        # Windows
+```
+
+To build a native, double-clickable installer for your OS instead of running from source:
+
+```sh
+./gradlew packageDmg   # macOS
+./gradlew packageMsi   # Windows
+./gradlew packageDeb   # Linux
+```
+
+The installer lands under `desktop-kotlin/build/compose/binaries/main/<format>/`. Each format
+packages only on its own OS (`jpackage` doesn't cross-compile) — build the `.dmg` on a Mac, the
+`.msi` on Windows, the `.deb` on Linux.
+
+To run the test suite instead:
+
+```sh
+./gradlew test
+```
+
 ## Architecture
 
 `CONTEXT.md` is the domain glossary; `docs/adr/` holds the real architectural decisions and the
 reasoning behind them (why classic-mode givens work the way they do, why generation runs in
-parallel batches, and so on). Start there before making a structural change.
+parallel batches, and so on). Start there before making a structural change — both builds follow
+the same decisions, ported rather than reinvented.
