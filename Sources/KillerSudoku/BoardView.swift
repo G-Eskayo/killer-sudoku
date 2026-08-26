@@ -18,10 +18,12 @@ struct BoardView: View {
     @State private var boxPulseStarts: [Int: Date] = [:]
     @State private var completionFlourishStart: Date?
 
-    private static let mistakePulseDuration: TimeInterval = 0.5
-    private static let cageCelebrationDuration: TimeInterval = 0.45
-    private static let lineCelebrationDuration: TimeInterval = 0.6
-    private static let completionFlourishDuration: TimeInterval = 1.0
+    // Widened from the original pass per feedback that the animations read as too subtle to
+    // notice at a glance.
+    private static let mistakePulseDuration: TimeInterval = 0.8
+    private static let cageCelebrationDuration: TimeInterval = 0.7
+    private static let lineCelebrationDuration: TimeInterval = 0.9
+    private static let completionFlourishDuration: TimeInterval = 1.6
 
     private var boardSize: CGFloat { cellSize * 9 }
 
@@ -108,13 +110,13 @@ struct BoardView: View {
             let progress = pulseProgress(since: rowPulseStarts[row], duration: Self.lineCelebrationDuration, now: now)
             guard progress > 0 else { continue }
             let rect = CGRect(x: 0, y: CGFloat(row) * cellSize, width: boardSize, height: cellSize).insetBy(dx: 1, dy: 1)
-            context.fill(Path(rect), with: .color(.primary.opacity(0.16 * progress)))
+            context.fill(Path(rect), with: .color(.primary.opacity(0.24 * progress)))
         }
         for column in 0..<9 {
             let progress = pulseProgress(since: columnPulseStarts[column], duration: Self.lineCelebrationDuration, now: now)
             guard progress > 0 else { continue }
             let rect = CGRect(x: CGFloat(column) * cellSize, y: 0, width: cellSize, height: boardSize).insetBy(dx: 1, dy: 1)
-            context.fill(Path(rect), with: .color(.primary.opacity(0.16 * progress)))
+            context.fill(Path(rect), with: .color(.primary.opacity(0.24 * progress)))
         }
     }
 
@@ -133,7 +135,7 @@ struct BoardView: View {
             ).insetBy(dx: 2, dy: 2)
             context.stroke(
                 Path(roundedRect: rect, cornerRadius: 4),
-                with: .color(.primary.opacity(0.5 * progress)), lineWidth: 3
+                with: .color(.primary.opacity(0.62 * progress)), lineWidth: 3.5
             )
         }
     }
@@ -149,7 +151,7 @@ struct BoardView: View {
             let path = Path(roundedRect: rect, cornerRadius: 3)
             let pulse = pulseProgress(since: mistakePulseStarts[coordinate], duration: Self.mistakePulseDuration, now: now)
             context.drawLayer { layer in
-                layer.addFilter(.shadow(color: .primary.opacity(0.9), radius: 4 + 10 * pulse))
+                layer.addFilter(.shadow(color: .primary.opacity(0.9), radius: 4 + 16 * pulse))
                 layer.stroke(path, with: .color(.primary.opacity(0.9)), lineWidth: 2.5)
             }
         }
@@ -230,14 +232,14 @@ struct BoardView: View {
                 x: rects.map(\.midX).reduce(0, +) / CGFloat(rects.count),
                 y: rects.map(\.midY).reduce(0, +) / CGFloat(rects.count)
             )
-            let scale = 1 + 0.06 * progress
+            let scale = 1 + 0.1 * progress
             let path = cageBorderPath(for: cage, inset: 4)
 
             context.drawLayer { layer in
                 layer.translateBy(x: centroid.x, y: centroid.y)
                 layer.scaleBy(x: scale, y: scale)
                 layer.translateBy(x: -centroid.x, y: -centroid.y)
-                layer.stroke(path, with: .color(.primary.opacity(0.7 * progress)), lineWidth: 2.5)
+                layer.stroke(path, with: .color(.primary.opacity(0.8 * progress)), lineWidth: 3)
             }
         }
     }
@@ -314,8 +316,8 @@ struct BoardView: View {
         let rect = CGRect(x: 0, y: 0, width: boardSize, height: boardSize).insetBy(dx: 2, dy: 2)
         let path = Path(roundedRect: rect, cornerRadius: 6)
         context.drawLayer { layer in
-            layer.addFilter(.shadow(color: .primary.opacity(0.8), radius: 12 * progress))
-            layer.stroke(path, with: .color(.primary.opacity(0.85 * progress)), lineWidth: 4)
+            layer.addFilter(.shadow(color: .primary.opacity(0.8), radius: 18 * progress))
+            layer.stroke(path, with: .color(.primary.opacity(0.9 * progress)), lineWidth: 5)
         }
     }
 
