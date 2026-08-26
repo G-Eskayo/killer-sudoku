@@ -540,6 +540,35 @@ import Foundation
         #expect(board.cell(at: Coordinate(row: 8, column: 8)).digit == DemoPuzzle.solutionGrid[8][8])
     }
 
+    @Test func resetClearsPlayerDigitsAndPencilMarksButKeepsGivens() {
+        let given = Coordinate(row: 0, column: 0)
+        var cells = Array(repeating: Array(repeating: Cell(), count: 9), count: 9)
+        cells[given.row][given.column] = Cell(digit: 5, isGiven: true)
+        var board = Board(cages: Self.makeTestCages(), cells: cells)
+        let playerCell = Coordinate(row: 3, column: 4)
+        let noteCell = Coordinate(row: 5, column: 5)
+        board.setDigit(7, at: playerCell)
+        board.togglePencilMark(2, at: noteCell)
+
+        board.reset()
+
+        #expect(board.cell(at: given).digit == 5)
+        #expect(board.cell(at: playerCell).digit == nil)
+        #expect(board.cell(at: noteCell).pencilMarks.isEmpty)
+    }
+
+    @Test func resetClearsUndoAndRedoHistory() {
+        var board = Board(cages: Self.makeTestCages())
+        board.setDigit(7, at: Coordinate(row: 3, column: 4))
+        board.undo()
+        #expect(board.canRedo)
+
+        board.reset()
+
+        #expect(!board.canUndo)
+        #expect(!board.canRedo)
+    }
+
     @Test func isNotSolvedWhenFullyFilledButWithAMistake() {
         var board = Board(cages: DemoPuzzle.makeCages())
         // Fills everything except (0,1) with the correct solution, then fills (0,1) with a

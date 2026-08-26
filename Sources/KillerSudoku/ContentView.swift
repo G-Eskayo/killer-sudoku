@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var selected: Coordinate? = Coordinate(row: 0, column: 0)
     @State private var showingStats = false
     @State private var completionSnapshot: CompletionSnapshot?
+    @State private var showingResetConfirmation = false
     @FocusState private var isFocused: Bool
 
     private let cellSize: CGFloat = 56
@@ -25,6 +26,31 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
+                    Button {
+                        game.board.undo()
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .disabled(!game.board.canUndo)
+                    .help("Undo last move")
+                    Button {
+                        showingResetConfirmation = true
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help("Reset puzzle")
+                    .confirmationDialog(
+                        "Reset this puzzle?", isPresented: $showingResetConfirmation, titleVisibility: .visible
+                    ) {
+                        Button("Reset", role: .destructive) { game.resetPuzzle() }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This clears every digit and note you've entered. The puzzle itself stays the same.")
+                    }
                     TimerView(timer: game.timer) { game.toggleTimer() }
                     Button {
                         showingStats = true

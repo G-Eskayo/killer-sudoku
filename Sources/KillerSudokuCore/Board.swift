@@ -79,6 +79,21 @@ public struct Board: Sendable {
         record(.pencilMark(coordinate: coordinate, mark: mark))
     }
 
+    /// Clears every player-entered digit and pencil mark, keeping the same cage layout and
+    /// givens exactly as generated — restarting this puzzle from scratch rather than replacing
+    /// it with a fresh one. Not itself undoable: the undo/redo history is discarded along with
+    /// the progress it describes, the same way starting a genuinely new puzzle also begins with
+    /// a clean history.
+    public mutating func reset() {
+        for row in 0..<9 {
+            for column in 0..<9 where !cells[row][column].isGiven {
+                cells[row][column] = Cell()
+            }
+        }
+        undoStack.removeAll()
+        redoStack.removeAll()
+    }
+
     /// Clears every pencil mark in one cell as a single undoable step — e.g. Delete on a cell
     /// that has notes but no digit. A no-op (no undo entry) when there's nothing to clear.
     public mutating func clearPencilMarks(at coordinate: Coordinate) {

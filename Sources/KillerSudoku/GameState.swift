@@ -69,6 +69,16 @@ final class GameState: ObservableObject {
         (StatsStore.bestTime(for: difficulty, context: modelContext), StatsStore.solveCount(for: difficulty, context: modelContext))
     }
 
+    /// Clears all player progress on the *current* puzzle (same cages, same givens) and restarts
+    /// its timer from zero — a fresh attempt at the same puzzle, not a new one. `hasRecordedSolve`
+    /// resets too, so a later solve of this same puzzle can be recorded like any other.
+    func resetPuzzle() {
+        board.reset()
+        hasRecordedSolve = false
+        timer.reset()
+        timer.start()
+    }
+
     func toggleTimer() {
         if timer.isRunning {
             timer.pause()
