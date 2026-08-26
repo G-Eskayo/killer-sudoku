@@ -5,20 +5,19 @@
 public enum CageLayoutGenerator {
     /// Returns nil if no valid partition was found within the retry budget — for the full board
     /// this essentially never happens in practice, but a caller partitioning an irregular region
-    /// (hybrid mode, where given cells are excluded entirely) needs to handle it: an unlucky
-    /// given selection can leave a cell fully boxed in by holes/edges with no possible cage-mate,
-    /// which is a *structural* dead end no amount of retrying the same region fixes — only
-    /// picking a fresh region (a caller-level concern) does.
+    /// needs to handle it: an unlucky region shape can leave a cell fully boxed in by holes/edges
+    /// with no possible cage-mate, which is a *structural* dead end no amount of retrying the
+    /// same region fixes — only picking a fresh region (a caller-level concern) does.
     public static func generate(for grid: [[Int]]) -> [Cage]? {
         cages(for: grid, in: Set(Coordinate.all), startingID: 0)
     }
 
     /// Same algorithm restricted to an explicit cell region rather than the whole board — lets a
-    /// caller (e.g. a test needing a partially hand-controlled layout, or hybrid mode excluding
-    /// given cells) generate a realistic, well-scattered cage partition over just part of the
-    /// board. `startingID` avoids id collisions when the caller combines this with cages built
-    /// another way. `maxAttempts` bounds the retry loop — see the doc comment above on why an
-    /// irregular region isn't guaranteed to ever succeed.
+    /// caller (e.g. a test needing a partially hand-controlled layout) generate a realistic,
+    /// well-scattered cage partition over just part of the board. `startingID` avoids id
+    /// collisions when the caller combines this with cages built another way. `maxAttempts`
+    /// bounds the retry loop — see the doc comment above on why an irregular region isn't
+    /// guaranteed to ever succeed.
     static func cages(
         for grid: [[Int]], in region: Set<Coordinate>, startingID: Int, maxAttempts: Int = 500
     ) -> [Cage]? {

@@ -42,7 +42,7 @@ import SwiftData
 
         #expect(StatsStore.solveCount(for: .medium, context: context) == 2)
         #expect(StatsStore.solveCount(for: .hard, context: context) == 1)
-        #expect(StatsStore.solveCount(for: .beginner, context: context) == 0)
+        #expect(StatsStore.solveCount(for: .expert, context: context) == 0)
     }
 
     @Test @MainActor func historyIsOrderedMostRecentFirst() {

@@ -33,22 +33,4 @@ import Testing
         let count = PuzzleSolver.countSolutions(cages: cages, upTo: 2)
         #expect(count == 2)
     }
-
-    /// Every cell except (0,0) is a given matching the known solution, and (0,0) belongs to no
-    /// cage at all — a hybrid-mode-style setup (givens outside the cage system). If the solver
-    /// correctly treats givens as fixed (not searched, but still constraining row/column/box),
-    /// the one remaining cell is forced to exactly one value by row/column/box alone.
-    @Test func givensConstrainTheSearchEvenOutsideAnyCage() {
-        let grid = DemoPuzzle.solutionGrid
-        var givens: [Coordinate: Int] = [:]
-        for row in 0..<9 {
-            for column in 0..<9 where !(row == 0 && column == 0) {
-                givens[Coordinate(row: row, column: column)] = grid[row][column]
-            }
-        }
-
-        let result = PuzzleSolver.verify(cages: [], givens: givens, upTo: 2)
-
-        #expect(result.solutionCount == 1)
-    }
 }
