@@ -126,7 +126,14 @@ fun App(game: GameState) {
                     handleKeyEvent(event, game, selected, onMove = ::move)
                 }
                 .pointerInput(Unit) {
-                    detectCellTap(cellSize) { coordinate -> selected = coordinate }
+                    detectCellTap(cellSize) { coordinate ->
+                        selected = coordinate
+                        // Re-request focus on every tap, not just at launch: the initial
+                        // LaunchedEffect(Unit) request can lose a race with the window actually
+                        // gaining OS-level focus, and clicking a cell is the natural recovery
+                        // path a player would try first if the keyboard isn't responding.
+                        focusRequester.requestFocus()
+                    }
                 },
         ) {
             BoardCanvas(board = game.board, selected = selected, cellSizeDp = cellSize)
