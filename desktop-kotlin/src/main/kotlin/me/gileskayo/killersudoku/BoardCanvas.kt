@@ -45,7 +45,13 @@ fun BoardCanvas(board: Board, selected: Coordinate?, cellSizeDp: Dp, modifier: M
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
-            withFrameMillis { now = it }
+            // withFrameMillis's own parameter is nanoTime-based (an arbitrary monotonic origin),
+            // not epoch time -- every pulse-start timestamp below is System.currentTimeMillis()
+            // (epoch time). Mixing the two made `now - start` always a huge negative number, so
+            // pulseProgress's `elapsed < 0` guard silently zeroed out every animation. Only using
+            // withFrameMillis to drive the redraw cadence; the actual value has to match the
+            // clock the start timestamps use.
+            withFrameMillis { now = System.currentTimeMillis() }
         }
     }
 
