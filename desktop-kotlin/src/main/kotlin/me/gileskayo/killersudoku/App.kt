@@ -2,14 +2,18 @@ package me.gileskayo.killersudoku
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,8 +37,12 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.launch
 import me.gileskayo.killersudoku.core.Coordinate
@@ -73,37 +81,41 @@ fun App(game: GameState) {
         selected = Coordinate(newRow, newColumn)
     }
 
-    Column(modifier = Modifier.padding(24.dp)) {
-        Text("Killer Sudoku", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.width(8.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            NewPuzzleMenu(isGenerating = game.isGeneratingNewPuzzle) { difficulty ->
-                scope.launch { game.startNewPuzzle(difficulty) }
-            }
-            Spacer(Modifier.width(6.dp))
-            Text(game.currentDifficulty.displayName, style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.width(24.dp))
-            TextButton(onClick = { game.updateBoard(game.board.undo()) }, enabled = game.board.canUndo) {
-                Text("Undo")
-            }
-            TextButton(onClick = { showingResetConfirmation = true }) {
-                Text("Reset")
-            }
-            Spacer(Modifier.width(16.dp))
-            TimerDisplay(timer = game.timer, onToggle = { game.toggleTimer() })
-            Spacer(Modifier.width(16.dp))
-            Box {
-                TextButton(onClick = { showingStats = true }) { Text("Stats") }
-                if (showingStats) {
-                    Popup(onDismissRequest = { showingStats = false }) {
-                        Surface(shadowElevation = 8.dp) { StatsPopover(game) }
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.fillMaxWidth()) {
+            Text(
+                "Killer Sudoku",
+                style = TextStyle(color = textPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif),
+                modifier = Modifier.align(Alignment.Center),
+            )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                NewPuzzleMenu(isGenerating = game.isGeneratingNewPuzzle) { difficulty ->
+                    scope.launch { game.startNewPuzzle(difficulty) }
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(game.currentDifficulty.displayName, style = TextStyle(color = textSecondary, fontSize = 12.sp, fontFamily = FontFamily.SansSerif))
+                Spacer(Modifier.weight(1f))
+                GlyphButton(enabled = game.board.canUndo, onClick = { game.updateBoard(game.board.undo()) }) {
+                    UndoIcon(color = if (game.board.canUndo) textSecondary else textTertiary)
+                }
+                GlyphButton(onClick = { showingResetConfirmation = true }) { ResetIcon() }
+                Spacer(Modifier.width(8.dp))
+                TimerDisplay(timer = game.timer, onToggle = { game.toggleTimer() })
+                Spacer(Modifier.width(8.dp))
+                Box {
+                    GlyphButton(onClick = { showingStats = true }) { BarChartIcon() }
+                    if (showingStats) {
+                        Popup(onDismissRequest = { showingStats = false }) {
+                            Surface(color = windowBackground, shadowElevation = 8.dp) { StatsPopover(game) }
+                        }
                     }
                 }
             }
         }
-
-        Spacer(Modifier.width(16.dp))
 
         Box(
             modifier = Modifier
@@ -120,12 +132,11 @@ fun App(game: GameState) {
             BoardCanvas(board = game.board, selected = selected, cellSizeDp = cellSize)
         }
 
-        Spacer(Modifier.width(16.dp))
         CompletionLegend(completedDigits = game.board.completedDigits())
-        Text(
-            "Click a cell, then type 1-9. Shift+1-9 toggles a pencil mark instead. Delete clears. Arrow keys move.",
-            style = MaterialTheme.typography.bodySmall,
-        )
+
+        Row(Modifier.fillMaxWidth()) {
+            InfoHoverIcon()
+        }
     }
 
     if (showingResetConfirmation) {
@@ -150,6 +161,23 @@ fun App(game: GameState) {
             completionSnapshot = null
             scope.launch { game.startNewPuzzle(difficulty) }
         }
+    }
+}
+
+/** A plain, unfilled clickable region around an icon glyph -- deliberately not a Material
+ * `IconButton` or `TextButton`, both of which paint a tinted background/ripple that reads nothing
+ * like the Swift original's `.buttonStyle(.plain)` icon buttons (no fill, no highlight beyond the
+ * icon itself dimming when disabled). */
+@Composable
+private fun GlyphButton(enabled: Boolean = true, onClick: () -> Unit, icon: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clickable(
+                enabled = enabled, interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick,
+            )
+            .padding(6.dp),
+    ) {
+        icon()
     }
 }
 

@@ -5,15 +5,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import me.gileskayo.killersudoku.core.Difficulty
@@ -40,26 +43,49 @@ fun CompletionDialog(snapshot: CompletionSnapshot, onNewPuzzle: (Difficulty) -> 
         onDismissRequest = {},
         properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
     ) {
-        Surface(shape = MaterialTheme.shapes.large) {
+        Surface(shape = MaterialTheme.shapes.large, color = windowBackground) {
             Column(
                 modifier = Modifier.padding(28.dp).width(260.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                Text("Solved!", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text(snapshot.elapsedSeconds.formattedAsMinutesAndSeconds(), style = MaterialTheme.typography.titleLarge)
-
-                Text("${snapshot.difficulty.displayName} - ${snapshot.solveCount} solved")
-                if (snapshot.isNewBest) {
-                    Text("New best time", fontWeight = FontWeight.SemiBold)
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "Solved!",
+                        style = TextStyle(color = textPrimary, fontSize = 34.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.SansSerif),
+                    )
+                    Text(
+                        snapshot.elapsedSeconds.formattedAsMinutesAndSeconds(),
+                        style = TextStyle(color = textSecondary, fontSize = 22.sp, fontFamily = FontFamily.Monospace),
+                    )
                 }
 
-                Text("New Puzzle", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp))
-                for (difficulty in Difficulty.entries) {
-                    Button(
-                        onClick = { onNewPuzzle(difficulty) },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    ) {
-                        Text(difficulty.displayName)
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "${snapshot.difficulty.displayName} — ${snapshot.solveCount} solved",
+                        style = TextStyle(color = textPrimary, fontSize = 13.sp, fontFamily = FontFamily.SansSerif),
+                    )
+                    if (snapshot.isNewBest) {
+                        Text(
+                            "New best time",
+                            style = TextStyle(
+                                color = textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif,
+                            ),
+                        )
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "New Puzzle",
+                        style = TextStyle(
+                            color = textPrimary, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif,
+                        ),
+                    )
+                    for (difficulty in Difficulty.entries) {
+                        OutlinedButton(onClick = { onNewPuzzle(difficulty) }, modifier = Modifier.fillMaxWidth()) {
+                            Text(difficulty.displayName, color = textPrimary)
+                        }
                     }
                 }
             }
