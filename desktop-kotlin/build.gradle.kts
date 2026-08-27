@@ -58,6 +58,13 @@ compose.desktop {
             packageVersion = "1.0.0"
             description = "A native Killer Sudoku puzzle game."
             copyright = "© 2026 Gil Eskayo"
+
+            // Same artwork as the Swift app's Resources/AppIcon.icns (see scripts/generate-icon.py
+            // at the repo root), just re-exported per platform -- without these, a packaged build
+            // ships with jpackage's generic default icon instead of this app's own.
+            macOS { iconFile.set(project.file("icons/AppIcon.icns")) }
+            windows { iconFile.set(project.file("icons/AppIcon.ico")) }
+            linux { iconFile.set(project.file("icons/AppIcon.png")) }
         }
     }
 }
