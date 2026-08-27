@@ -81,9 +81,10 @@ struct ContentView: View {
 
             CompletionLegendView(completedDigits: game.board.completedDigits())
 
-            Text("Click a cell, then type 1-9. Shift+1-9 toggles a pencil mark instead. Delete clears. Arrow keys move.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack {
+                InfoHoverIcon()
+                Spacer()
+            }
         }
         .padding(24)
         .onAppear { isFocused = true }
