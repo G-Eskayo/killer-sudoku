@@ -44,6 +44,7 @@ A few things that aren't obvious from the UI alone:
 - Arrow keys move the selection; `Cmd+Z` / `Cmd+Shift+Z` undo/redo.
 - Once a puzzle is solved, the board locks and a summary sheet appears — the only way out is
   picking a new puzzle.
+- Hover the ⓘ icon in the bottom-left for a quick reminder of the controls above.
 
 ## Building and running
 
@@ -89,6 +90,15 @@ To build a native, double-clickable installer for your OS instead of running fro
 The installer lands under `desktop-kotlin/build/compose/binaries/main/<format>/`. Each format
 packages only on its own OS (`jpackage` doesn't cross-compile) — build the `.dmg` on a Mac, the
 `.msi` on Windows, the `.deb` on Linux.
+
+On macOS, if `codesign` fails with `resource fork, Finder information, or similar detritus not
+allowed` (or the built `.app` says it's "damaged" when you try to open it), a stray Finder
+extended attribute is blocking the signature — clear it and re-sign:
+
+```sh
+xattr -cr build/compose/binaries/main/app/KillerSudoku.app
+codesign -s - --force build/compose/binaries/main/app/KillerSudoku.app
+```
 
 To run the test suite instead:
 
